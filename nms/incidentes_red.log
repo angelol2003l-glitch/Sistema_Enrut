@@ -1,0 +1,33 @@
+[2026-09-24 19:52:12] [INFO] Topologia en linea. Gateway activo en R-ACCESO: 192.168.21.1
+[2026-09-24 19:52:44] [CRITICO] PC1 Cliente (192.168.20.50) sin respuesta ICMP (Host inaccesible).
+[2026-09-24 19:52:48] [CRITICO] R1 -> eth3 cayo a DOWN!
+[2026-09-24 19:54:16] [FAILOVER] ¡FALLA EN CAMINO PRIMARIO! Trafico REDIRIGIDO hacia R2 (192.168.22.1) via IP SLA / Ruta Flotante.
+[2026-09-24 19:54:16] [CRITICO] R-ACCESO -> eth1 cayo a DOWN!
+[2026-09-24 19:54:18] [RECUPERADO] PC1 Cliente (192.168.20.50) restablecio conectividad ICMP.
+[2026-09-24 19:54:18] [RECUPERADO] R1 -> eth3 se restauro a UP.
+[2026-09-24 19:54:19] [RECUPERADO] R-ACCESO -> eth1 se restauro a UP.
+[2026-09-24 19:55:53] [RECUPERADO] ¡CAMINO PRIMARIO RESTABLECIDO! Trafico NORMALIZADO de vuelta a R1 (192.168.21.1).
+[2026-09-24 19:57:26] [CRITICO] PC1 Cliente (192.168.20.50) sin respuesta ICMP (Host inaccesible).
+[2026-09-24 19:57:30] [CRITICO] R1 -> eth3 cayo a DOWN!
+[2026-09-24 19:57:31] [CRITICO] R-ACCESO -> eth1 cayo a DOWN!
+[2026-09-24 19:57:33] [RECUPERADO] PC1 Cliente (192.168.20.50) restablecio conectividad ICMP.
+[2026-09-24 19:57:33] [RECUPERADO] R1 -> eth3 se restauro a UP.
+[2026-09-24 19:57:33] [RECUPERADO] R-ACCESO -> eth1 se restauro a UP.
+[2026-09-24 20:06:34] [INFO] Topologia en linea. Gateway activo en R-ACCESO: 192.168.21.1
+[2026-09-24 20:08:05] [INFO] Topologia en linea. Gateway activo en R-ACCESO: 192.168.21.1
+[2026-09-24 20:08:21] [CRITICO] PC1 Cliente (192.168.20.50) sin respuesta ICMP (Host inaccesible).
+[2026-09-24 20:08:22] [CRITICO] PC1 Cliente (192.168.20.50) sin respuesta ICMP (Host inaccesible).
+[2026-09-24 20:08:25] [CRITICO] R1 -> eth3 cayo a DOWN!
+[2026-09-24 20:08:26] [CRITICO] R1 -> eth3 cayo a DOWN!
+[2026-09-24 20:08:26] [CRITICO] R-ACCESO -> eth1 cayo a DOWN!
+[2026-09-24 20:08:26] [CRITICO] R-ACCESO -> eth1 cayo a DOWN!
+[2026-09-24 20:08:28] [RECUPERADO] PC1 Cliente (192.168.20.50) restablecio conectividad ICMP.
+[2026-09-24 20:08:28] [RECUPERADO] PC1 Cliente (192.168.20.50) restablecio conectividad ICMP.
+[2026-09-24 20:08:28] [RECUPERADO] R1 -> eth3 se restauro a UP.
+[2026-09-24 20:08:30] [RECUPERADO] R1 -> eth3 se restauro a UP.
+[2026-09-24 20:08:31] [RECUPERADO] R-ACCESO -> eth1 se restauro a UP.
+[2026-09-24 20:08:31] [RECUPERADO] R-ACCESO -> eth1 se restauro a UP.
+[2026-09-24 20:23:21] [CRITICO] PC1 Cliente (192.168.20.50) sin respuesta ICMP (Host inaccesible).
+[2026-09-24 20:23:21] [CRITICO] PC1 Cliente (192.168.20.50) sin respuesta ICMP (Host inaccesible).
+[2026-09-24 20:23:25] [CRITICO] R1 -> eth3 cayo a DOWN!
+[2026-09-24 20:23:25] [CRITICO] R1 -> eth3 cayo a DOWN!

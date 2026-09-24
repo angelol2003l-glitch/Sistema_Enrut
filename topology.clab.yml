@@ -1,0 +1,99 @@
+name: enrut-ha
+prefix: ""
+
+topology:
+  kinds:
+    linux:
+      image: frr-snmp:latest
+  nodes:
+    # --- PLANO DE GESTION (OOB) ---
+    nms:
+      kind: linux
+      image: nms-telemetry:latest
+      binds:
+        - nms:/app
+      exec:
+        - ip addr add 192.168.10.10/24 dev eth1
+        - ip route add 192.168.0.0/16 via 192.168.10.1 dev eth1
+        - ip route add 10.0.0.0/8 via 192.168.10.1 dev eth1
+
+    r-gestion:
+      kind: linux
+      image: frr-snmp:latest
+      binds:
+        - configs/r-gestion/daemons:/etc/frr/daemons
+        - configs/r-gestion/frr.conf:/etc/frr/frr.conf
+        - configs/r-gestion/snmpd.conf:/etc/snmp/snmpd.conf
+      exec:
+        - vtysh -f /etc/frr/frr.conf
+        - sysctl -w net.ipv4.ip_forward=1
+        - ip route add 192.168.21.0/30 via 192.168.11.2 dev eth2
+        - ip route add 192.168.22.0/30 via 192.168.12.2 dev eth3
+        - ip route add 192.168.20.0/24 via 192.168.11.2 dev eth2
+        - snmpd -u root -C -c /etc/snmp/snmpd.conf
+
+    # --- PLANO CORE Y SERVICIOS P2P ---
+    r1:
+      kind: linux
+      image: frr-snmp:latest
+      binds:
+        - configs/r1/daemons:/etc/frr/daemons
+        - configs/r1/frr.conf:/etc/frr/frr.conf
+        - configs/r1/snmpd.conf:/etc/snmp/snmpd.conf
+      exec:
+        - vtysh -f /etc/frr/frr.conf
+        - sysctl -w net.ipv4.ip_forward=1
+        - ip route add 192.168.10.0/24 via 192.168.11.1 dev eth1
+        - snmpd -u root -C -c /etc/snmp/snmpd.conf
+
+    r2:
+      kind: linux
+      image: frr-snmp:latest
+      binds:
+        - configs/r2/daemons:/etc/frr/daemons
+        - configs/r2/frr.conf:/etc/frr/frr.conf
+        - configs/r2/snmpd.conf:/etc/snmp/snmpd.conf
+      exec:
+        - vtysh -f /etc/frr/frr.conf
+        - sysctl -w net.ipv4.ip_forward=1
+        - ip route add 192.168.10.0/24 via 192.168.12.1 dev eth1
+        - snmpd -u root -C -c /etc/snmp/snmpd.conf
+
+    # --- PLANO DE DATOS Y ACCESO ---
+    r-acceso:
+      kind: linux
+      image: frr-snmp:latest
+      binds:
+        - configs/r-acceso/daemons:/etc/frr/daemons
+        - configs/r-acceso/frr.conf:/etc/frr/frr.conf
+        - configs/r-acceso/snmpd.conf:/etc/snmp/snmpd.conf
+        - configs/r-acceso/sla_tracker.sh:/usr/local/bin/sla_tracker.sh
+      exec:
+        - vtysh -f /etc/frr/frr.conf
+        - sysctl -w net.ipv4.ip_forward=1
+        - ip route add 192.168.10.0/24 via 192.168.21.1 dev eth1
+        - ip route add 192.168.10.0/24 via 192.168.22.1 dev eth2 metric 10
+        - ip route del default dev eth0
+        - snmpd -u root -C -c /etc/snmp/snmpd.conf
+
+    pc1:
+      kind: linux
+      image: alpine:3.19
+      cmd: "sleep infinity"
+      exec:
+        - ip addr add 192.168.20.50/24 dev eth1
+        - ip route replace default via 192.168.20.1
+
+  links:
+    # Plano de Gestion OOB
+    - endpoints: ["nms:eth1", "r-gestion:eth1"]
+    - endpoints: ["r-gestion:eth2", "r1:eth1"]
+    - endpoints: ["r-gestion:eth3", "r2:eth1"]
+
+    # Plano Core P2P (Troncal)
+    - endpoints: ["r1:eth2", "r2:eth2"]
+
+    # Plano de Acceso y Servicios
+    - endpoints: ["r1:eth3", "r-acceso:eth1"]
+    - endpoints: ["r2:eth3", "r-acceso:eth2"]
+    - endpoints: ["r-acceso:eth3", "pc1:eth1"]
