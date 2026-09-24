@@ -12,3 +12,7 @@ clab-*/
 # Logs (keep directory or specific files if needed)
 *.log
 !nms/incidentes_red.log
+
+# Documentos internos excluidos
+DOCUMENTACION.md
+PLAN_FASES.md

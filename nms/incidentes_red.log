@@ -31,3 +31,11 @@
 [2026-09-24 20:23:21] [CRITICO] PC1 Cliente (192.168.20.50) sin respuesta ICMP (Host inaccesible).
 [2026-09-24 20:23:25] [CRITICO] R1 -> eth3 cayo a DOWN!
 [2026-09-24 20:23:25] [CRITICO] R1 -> eth3 cayo a DOWN!
+[2026-09-24 21:15:00] [CRITICO] R-ACCESO -> eth1 cayo a DOWN!
+[2026-09-24 21:15:00] [CRITICO] R-ACCESO -> eth1 cayo a DOWN!
+[2026-09-24 21:15:02] [RECUPERADO] PC1 Cliente (192.168.20.50) restablecio conectividad ICMP.
+[2026-09-24 21:15:02] [RECUPERADO] PC1 Cliente (192.168.20.50) restablecio conectividad ICMP.
+[2026-09-24 21:15:02] [RECUPERADO] R1 -> eth3 se restauro a UP.
+[2026-09-24 21:15:02] [RECUPERADO] R1 -> eth3 se restauro a UP.
+[2026-09-24 21:15:02] [RECUPERADO] R-ACCESO -> eth1 se restauro a UP.
+[2026-09-24 21:15:02] [RECUPERADO] R-ACCESO -> eth1 se restauro a UP.

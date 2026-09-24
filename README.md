@@ -87,7 +87,55 @@ docker ps
 
 ---
 
-## 6. Iniciar el Monitoreo NMS
+## 6. Comandos de Inspección con Containerlab (`sudo clab`)
+
+Containerlab incluye comandos nativos muy útiles para auditar nodos, interfaces y rutas sin tener que entrar uno por uno:
+
+### A. Inspeccionar el estado de los nodos del laboratorio
+Muestra una tabla con nombres, imágenes, estado y direcciones IP de gestión:
+```bash
+sudo clab inspect -t topology.clab.yml
+```
+Para ver detalles avanzados (incluyendo interfaces y bridges del host):
+```bash
+sudo clab inspect -t topology.clab.yml --details
+```
+
+### B. Ver las interfaces y direcciones IP de TODOS los nodos
+Ejecuta un comando en todos los contenedores al mismo tiempo:
+```bash
+# Ver interfaces en formato resumido en toda la red
+sudo clab exec -t topology.clab.yml --cmd "ip -br addr"
+
+# Ver enlaces físicos virtuales (veth)
+sudo clab exec -t topology.clab.yml --cmd "ip -br link"
+```
+
+### C. Ver interfaces o rutas de un nodo específico con clab
+```bash
+# Ver interfaces solo en R-ACCESO
+sudo clab exec -t topology.clab.yml --label clab-node-name=r-acceso --cmd "ip -br addr"
+
+# Ver la tabla de rutas del kernel en R-ACCESO
+sudo clab exec -t topology.clab.yml --label clab-node-name=r-acceso --cmd "ip route"
+
+# Ver rutas en FRRouting (Zebra) dentro de R1
+sudo clab exec -t topology.clab.yml --label clab-node-name=r1 --cmd "vtysh -c 'show ip route'"
+
+# Ver estado de interfaces en FRR en R2
+sudo clab exec -t topology.clab.yml --label clab-node-name=r2 --cmd "vtysh -c 'show interface brief'"
+```
+
+### D. Ver el grafo visual de la topología en el navegador
+Containerlab levanta un servidor web local con el diagrama interactivo de la red:
+```bash
+sudo clab graph -t topology.clab.yml
+```
+*(Abre en tu navegador la URL que te indique la terminal, por ejemplo: `http://localhost:50080`)*
+
+---
+
+## 7. Iniciar el Monitoreo NMS
 
 Inicia el servicio de telemetría dentro del contenedor `nms`:
 
@@ -101,7 +149,7 @@ docker exec -it nms tail -f /app/incidentes_red.log
 
 ---
 
-## 7. Comandos de Prueba y Validación
+## 8. Comandos de Prueba y Validación
 
 ### A. Probar conmutación por falla (Failover automático)
 Abre otra terminal y ejecuta el script automatizado:
@@ -117,9 +165,9 @@ bash scripts/verify_snmp.sh
 
 ---
 
-## 8. Comandos Útiles de Administración
+## 9. Comandos Útiles con Docker
 
-### Entrar a la consola de un router (FRR / vtysh)
+### Entrar a la consola interactiva de un router (FRR / vtysh)
 ```bash
 # Acceder a la CLI de R1
 docker exec -it r1 vtysh
@@ -134,11 +182,6 @@ show interface brief
 exit
 ```
 
-### Ver rutas del kernel en R-ACCESO
-```bash
-docker exec r-acceso ip route show
-```
-
 ### Probar conectividad desde el cliente PC1
 ```bash
 docker exec -it pc1 ping 8.8.8.8
@@ -146,7 +189,7 @@ docker exec -it pc1 ping 8.8.8.8
 
 ---
 
-## 9. Detener y Destruir el Laboratorio
+## 10. Detener y Destruir el Laboratorio
 
 Cuando termines tu sesión de trabajo, elimina la topología y limpia las interfaces virtuales:
 
@@ -156,5 +199,6 @@ sudo clab destroy -t topology.clab.yml --cleanup
 
 ---
 
-## Documentación Detallada
-Para una explicación técnica exhaustiva de la arquitectura, protocolos, OIDs de SNMP y resolución de problemas, consulta el archivo `DOCUMENTACION.md`.
+## Historial de Construcción del Proyecto
+Para conocer a detalle todos los pasos técnicos realizados para crear y configurar este proyecto desde cero, consulta el archivo:
+📄 **`PASOS_REALIZADOS.md`**
