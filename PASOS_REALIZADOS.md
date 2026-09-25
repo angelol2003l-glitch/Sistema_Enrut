@@ -175,3 +175,29 @@ Para comprobar el correcto funcionamiento y facilitar demostraciones, se crearon
    * Se asignaron permisos `chmod +x` a todos los scripts (`.sh`).
 3. **Documentación de Usuario (`README.md`)**:
    * Se incluyó la guía rápida con comandos listos para copiar y pegar, facilitando que cualquier persona con Docker y Containerlab pueda clonar y desplegar el proyecto en su propia laptop en pocos minutos.
+
+
+---
+
+## Fase 10: Resolución de Conflictos en WSL2 (Docker Desktop vs Docker Engine Nativo)
+
+### 10.1 Diagnóstico del Problema de Red en WSL2
+Al desplegar Containerlab en entornos Windows con WSL2 donde coexiste **Docker Desktop**, se identificó el siguiente fallo:
+* **Error**: `Failed to lookup link "br-xxxx": Link not found` y `Unable to determine NetNS Path`.
+* **Causa Raíz**: Docker Desktop inyecta un proceso proxy (`docker-desktop-user-distro`) que monta un socket tmpfs sobre `/var/run/docker.sock`. Cuando Containerlab intenta crear la red de gestión (`clab`), el daemon de Docker Desktop crea los puentes de red dentro de la máquina virtual de utilidad de Docker (`docker-desktop`) y no en el espacio de nombres de red de la distribución de Ubuntu. En consecuencia, Containerlab no puede encontrar los puentes vía Netlink ni inyectar los enlaces virtuales `veth` en los contenedores.
+
+### 10.2 Solución Implementada: Socket Dedicado para Docker Engine Nativo
+Se automatizó la resolución en el script `scripts/setup_native_docker.sh`:
+1. **Configuración de Systemd**: Se añadió un override en `/etc/systemd/system/docker.service.d/override.conf` para que el servicio nativo `dockerd` de Ubuntu escuche en `/run/docker-native.sock` y en `tcp://127.0.0.1:2375`.
+2. **Preservación de Entorno**: Se configuró la variable `DOCKER_HOST=unix:///run/docker-native.sock` en `/etc/environment`, `/etc/profile.d/docker_native.sh` y en los archivos `~/.bashrc`.
+3. **Persistencia con Sudo**: Se configuró `/etc/sudoers.d/docker_host` con `Defaults env_keep += "DOCKER_HOST"`, permitiendo que `sudo clab` herede automáticamente el socket nativo sin requerir parámetros adicionales.
+4. **Contexto Docker**: Se creó y activó el contexto `native` apuntando al socket dedicado.
+
+### 10.3 Automatización del Despliegue Limpio y Servicios
+* Se creó el script `scripts/start_services.sh` para iniciar de manera idempotente los agentes de telemetría y tracking (`monitor_definitivo.py`, `sla_tracker.sh`).
+* Se optimizó `topology.clab.yml` asignando `ip addr replace` previo a la inyección de rutas en R2 para evitar condiciones de carrera en el arranque de Zebra.
+* Se estandarizó el comando de despliegue y reinicio:
+  ```bash
+  sudo clab deploy -t topology.clab.yml --reconfigure
+  bash scripts/start_services.sh
+  ```

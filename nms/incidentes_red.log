@@ -39,3 +39,186 @@
 [2026-09-24 21:15:02] [RECUPERADO] R1 -> eth3 se restauro a UP.
 [2026-09-24 21:15:02] [RECUPERADO] R-ACCESO -> eth1 se restauro a UP.
 [2026-09-24 21:15:02] [RECUPERADO] R-ACCESO -> eth1 se restauro a UP.
+[2026-09-24 22:50:19] [INFO] Topologia en linea. Gateway activo en R-ACCESO: 192.168.21.1
+[2026-09-24 22:58:59] [RECUPERADO] PC1 Cliente (192.168.20.50) restablecio conectividad ICMP.
+[2026-09-24 22:59:23] [INFO] Topologia en linea. Gateway activo en R-ACCESO: 192.168.21.1
+[2026-09-24 23:00:53] [CRITICO] R1 -> eth3 cayo a DOWN!
+[2026-09-24 23:00:53] [CRITICO] R-ACCESO -> eth1 cayo a DOWN!
+[2026-09-24 23:01:01] [FAILOVER] ¡FALLA EN CAMINO PRIMARIO! Trafico REDIRIGIDO hacia R2 (192.168.22.1) via IP SLA / Ruta Flotante.
+[2026-09-24 23:01:20] [RECUPERADO] R1 -> eth3 se restauro a UP.
+[2026-09-24 23:01:24] [RECUPERADO] R-ACCESO -> eth1 se restauro a UP.
+[2026-09-24 23:03:03] [RECUPERADO] ¡CAMINO PRIMARIO RESTABLECIDO! Trafico NORMALIZADO de vuelta a R1 (192.168.21.1).
+[2026-09-24 23:49:00] [INFO] Topologia en linea. Gateway activo en R-ACCESO: 192.168.21.1
+[2026-09-24 23:49:16] [CRITICO] R1 -> eth3 cayo a DOWN!
+[2026-09-24 23:49:16] [AUTO-HEAL] Detectada falla en R1 (eth3). Evaluando diagnostico y auto-reparacion...
+[2026-09-24 23:49:17] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R1 para eth3.
+[2026-09-24 23:49:18] [CRITICO] R-ACCESO -> eth1 cayo a DOWN!
+[2026-09-24 23:49:18] [AUTO-HEAL] Detectada falla en R-ACCESO (eth1). Evaluando diagnostico y auto-reparacion...
+[2026-09-24 23:49:19] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R-ACCESO para eth1.
+[2026-09-24 23:49:21] [RECUPERADO] R1 -> eth3 se restauro a UP. (Falla resuelta en 4.07s | MTTR: 4.07s)
+[2026-09-24 23:49:21] [RECUPERADO] R-ACCESO -> eth1 se restauro a UP. (Falla resuelta en 3.06s | MTTR: 3.06s)
+[2026-09-25 00:03:33] [CRITICO] R1 -> eth3 cayo a DOWN!
+[2026-09-25 00:03:33] [AUTO-HEAL] Detectada falla en R1 (eth3). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 00:03:34] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R1 para eth3.
+[2026-09-25 00:03:34] [CRITICO] R-ACCESO -> eth1 cayo a DOWN!
+[2026-09-25 00:03:34] [AUTO-HEAL] Detectada falla en R-ACCESO (eth1). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 00:03:35] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R-ACCESO para eth1.
+[2026-09-25 00:03:37] [RECUPERADO] R1 -> eth3 se restauro a UP. (Falla resuelta en 4.08s | MTTR: 4.08s)
+[2026-09-25 00:03:37] [RECUPERADO] R-ACCESO -> eth1 se restauro a UP. (Falla resuelta en 3.06s | MTTR: 3.06s)
+[2026-09-25 00:30:56] [CRITICO] R2 -> eth3 cayo a DOWN!
+[2026-09-25 00:30:56] [AUTO-HEAL] Detectada falla en R2 (eth3). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 00:30:57] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R2 para eth3.
+[2026-09-25 00:30:57] [CRITICO] R-ACCESO -> eth2 cayo a DOWN!
+[2026-09-25 00:30:57] [AUTO-HEAL] Detectada falla en R-ACCESO (eth2). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 00:30:58] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R-ACCESO para eth2.
+[2026-09-25 00:31:00] [RECUPERADO] R-ACCESO -> eth2 se restauro a UP. (Falla resuelta en 3.06s | MTTR: 3.06s)
+[2026-09-25 00:31:02] [RECUPERADO] R2 -> eth3 se restauro a UP. (Falla resuelta en 6.19s | MTTR: 6.19s)
+[2026-09-25 00:52:21] [INFO] Servidor de metricas Prometheus activo en http://0.0.0.0:8000/metrics
+[2026-09-25 00:52:21] [INFO] Topologia en linea. Gateway activo en R-ACCESO: 192.168.21.1
+[2026-09-25 00:54:45] [CRITICO] R1 -> eth3 cayo a DOWN!
+[2026-09-25 00:54:45] [AUTO-HEAL] Detectada falla en R1 (eth3). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 00:54:46] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R1 para eth3.
+[2026-09-25 00:54:46] [CRITICO] R-ACCESO -> eth1 cayo a DOWN!
+[2026-09-25 00:54:46] [AUTO-HEAL] Detectada falla en R-ACCESO (eth1). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 00:54:47] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R-ACCESO para eth1.
+[2026-09-25 00:54:49] [RECUPERADO] R1 -> eth3 se restauro a UP. (Falla resuelta en 4.11s | MTTR: 4.11s)
+[2026-09-25 00:54:49] [RECUPERADO] R-ACCESO -> eth1 se restauro a UP. (Falla resuelta en 3.07s | MTTR: 3.07s)
+[2026-09-25 01:02:51] [INFO] Servidor de metricas Prometheus activo en http://0.0.0.0:8000/metrics
+[2026-09-25 01:02:51] [INFO] Topologia en linea. Gateway activo en R-ACCESO: 192.168.21.1
+[2026-09-25 01:04:57] [CRITICO] R1 -> eth3 cayo a DOWN!
+[2026-09-25 01:04:57] [AUTO-HEAL] Detectada falla en R1 (eth3). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 01:04:58] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R1 para eth3 (latencia: 9.5ms).
+[2026-09-25 01:04:58] [CRITICO] R-ACCESO -> eth1 cayo a DOWN!
+[2026-09-25 01:04:58] [AUTO-HEAL] Detectada falla en R-ACCESO (eth1). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 01:04:59] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R-ACCESO para eth1 (latencia: 5.3ms).
+[2026-09-25 01:05:01] [RECUPERADO] R1 -> eth3 se restauro a UP. (Falla resuelta en 4.08s | MTTR: 4.08s)
+[2026-09-25 01:05:01] [RECUPERADO] R-ACCESO -> eth1 se restauro a UP. (Falla resuelta en 3.09s | MTTR: 3.09s)
+[2026-09-25 01:05:34] [CRITICO] R-ACCESO -> eth1 cayo a DOWN!
+[2026-09-25 01:05:34] [AUTO-HEAL] Detectada falla en R-ACCESO (eth1). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 01:05:35] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R-ACCESO para eth1 (latencia: 5.9ms).
+[2026-09-25 01:05:37] [RECUPERADO] R-ACCESO -> eth1 se restauro a UP. (Falla resuelta en 3.08s | MTTR: 3.08s)
+[2026-09-25 01:05:45] [CRITICO] R1 -> eth3 cayo a DOWN!
+[2026-09-25 01:05:45] [AUTO-HEAL] Detectada falla en R1 (eth3). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 01:05:46] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R1 para eth3 (latencia: 6.2ms).
+[2026-09-25 01:05:46] [CRITICO] R-ACCESO -> eth1 cayo a DOWN!
+[2026-09-25 01:05:46] [AUTO-HEAL] Detectada falla en R-ACCESO (eth1). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 01:05:47] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R-ACCESO para eth1 (latencia: 5.9ms).
+[2026-09-25 01:05:49] [RECUPERADO] R1 -> eth3 se restauro a UP. (Falla resuelta en 4.08s | MTTR: 4.08s)
+[2026-09-25 01:05:49] [RECUPERADO] R-ACCESO -> eth1 se restauro a UP. (Falla resuelta en 3.07s | MTTR: 3.07s)
+[2026-09-25 01:06:26] [CRITICO] R1 -> eth3 cayo a DOWN!
+[2026-09-25 01:06:26] [AUTO-HEAL] Detectada falla en R1 (eth3). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 01:06:27] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R1 para eth3 (latencia: 4.0ms).
+[2026-09-25 01:06:27] [CRITICO] R-ACCESO -> eth1 cayo a DOWN!
+[2026-09-25 01:06:27] [AUTO-HEAL] Detectada falla en R-ACCESO (eth1). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 01:06:28] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R-ACCESO para eth1 (latencia: 4.3ms).
+[2026-09-25 01:06:30] [RECUPERADO] R1 -> eth3 se restauro a UP. (Falla resuelta en 4.07s | MTTR: 4.07s)
+[2026-09-25 01:06:30] [RECUPERADO] R-ACCESO -> eth1 se restauro a UP. (Falla resuelta en 3.07s | MTTR: 3.07s)
+[2026-09-25 01:06:53] [CRITICO] R-ACCESO -> eth1 cayo a DOWN!
+[2026-09-25 01:06:53] [AUTO-HEAL] Detectada falla en R-ACCESO (eth1). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 01:06:54] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R-ACCESO para eth1 (latencia: 4.6ms).
+[2026-09-25 01:06:56] [RECUPERADO] R-ACCESO -> eth1 se restauro a UP. (Falla resuelta en 3.06s | MTTR: 3.06s)
+[2026-09-25 01:08:02] [INFO] Servidor de metricas Prometheus activo en http://0.0.0.0:8000/metrics
+[2026-09-25 01:08:02] [INFO] Topologia en linea. Gateway activo en R-ACCESO: 192.168.21.1
+[2026-09-25 01:08:24] [CRITICO] R1 -> eth3 cayo a DOWN!
+[2026-09-25 01:08:24] [AUTO-HEAL] Detectada falla en R1 (eth3). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 01:08:25] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R1 para eth3 (latencia: 7.8ms).
+[2026-09-25 01:08:25] [CRITICO] R-ACCESO -> eth1 cayo a DOWN!
+[2026-09-25 01:08:25] [AUTO-HEAL] Detectada falla en R-ACCESO (eth1). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 01:08:26] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R-ACCESO para eth1 (latencia: 9.6ms).
+[2026-09-25 01:08:26] [FAILOVER] ¡FALLA EN CAMINO PRIMARIO! Trafico REDIRIGIDO hacia R2 (192.168.22.1) via IP SLA / Ruta Flotante.
+[2026-09-25 01:08:28] [RECUPERADO] R1 -> eth3 se restauro a UP. (Falla resuelta en 4.07s | MTTR: 4.07s)
+[2026-09-25 01:08:28] [RECUPERADO] R-ACCESO -> eth1 se restauro a UP. (Falla resuelta en 3.06s | MTTR: 3.06s)
+[2026-09-25 01:08:28] [RECUPERADO] ¡CAMINO PRIMARIO RESTABLECIDO! Trafico NORMALIZADO de vuelta a R1 (192.168.21.1).
+[2026-09-25 01:18:04] [CRITICO] PC1 Cliente (192.168.20.50) sin respuesta ICMP (Host inaccesible).
+[2026-09-25 01:18:12] [RECUPERADO] PC1 Cliente (192.168.20.50) restablecio conectividad ICMP. (Interrupcion resuelta en 8.06s | MTTR: 8.06s)
+[2026-09-25 01:24:14] [CRITICO] R-ACCESO -> eth1 cayo a DOWN!
+[2026-09-25 01:24:14] [AUTO-HEAL] Detectada falla en R-ACCESO (eth1). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 01:24:15] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R-ACCESO para eth1 (latencia: 11.7ms).
+[2026-09-25 01:24:15] [FAILOVER] ¡FALLA EN CAMINO PRIMARIO! Trafico REDIRIGIDO hacia R2 (192.168.22.1) via IP SLA / Ruta Flotante.
+[2026-09-25 01:24:17] [RECUPERADO] R-ACCESO -> eth1 se restauro a UP. (Falla resuelta en 3.09s | MTTR: 3.09s)
+[2026-09-25 01:24:17] [RECUPERADO] ¡CAMINO PRIMARIO RESTABLECIDO! Trafico NORMALIZADO de vuelta a R1 (192.168.21.1).
+[2026-09-25 01:26:36] [CRITICO] PC1 Cliente (192.168.20.50) sin respuesta ICMP (Host inaccesible).
+[2026-09-25 01:26:36] [CRITICO] R1 -> eth3 cayo a DOWN!
+[2026-09-25 01:26:36] [AUTO-HEAL] Detectada falla en R1 (eth3). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 01:26:37] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R1 para eth3 (latencia: 9.6ms).
+[2026-09-25 01:26:37] [CRITICO] R-ACCESO -> eth1 cayo a DOWN!
+[2026-09-25 01:26:37] [AUTO-HEAL] Detectada falla en R-ACCESO (eth1). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 01:26:38] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R-ACCESO para eth1 (latencia: 5.0ms).
+[2026-09-25 01:26:38] [FAILOVER] ¡FALLA EN CAMINO PRIMARIO! Trafico REDIRIGIDO hacia R2 (192.168.22.1) via IP SLA / Ruta Flotante.
+[2026-09-25 01:26:40] [RECUPERADO] PC1 Cliente (192.168.20.50) restablecio conectividad ICMP. (Interrupcion resuelta en 4.09s | MTTR: 4.09s)
+[2026-09-25 01:26:40] [RECUPERADO] R1 -> eth3 se restauro a UP. (Falla resuelta en 4.09s | MTTR: 4.09s)
+[2026-09-25 01:26:40] [RECUPERADO] R-ACCESO -> eth1 se restauro a UP. (Falla resuelta en 3.08s | MTTR: 3.08s)
+[2026-09-25 01:26:40] [RECUPERADO] ¡CAMINO PRIMARIO RESTABLECIDO! Trafico NORMALIZADO de vuelta a R1 (192.168.21.1).
+[2026-09-25 01:27:12] [CRITICO] PC1 Cliente (192.168.20.50) sin respuesta ICMP (Host inaccesible).
+[2026-09-25 01:27:12] [CRITICO] R1 -> eth3 cayo a DOWN!
+[2026-09-25 01:27:12] [AUTO-HEAL] Detectada falla en R1 (eth3). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 01:27:13] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R1 para eth3 (latencia: 5.3ms).
+[2026-09-25 01:27:13] [CRITICO] R-ACCESO -> eth1 cayo a DOWN!
+[2026-09-25 01:27:13] [AUTO-HEAL] Detectada falla en R-ACCESO (eth1). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 01:27:14] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R-ACCESO para eth1 (latencia: 7.2ms).
+[2026-09-25 01:27:14] [FAILOVER] ¡FALLA EN CAMINO PRIMARIO! Trafico REDIRIGIDO hacia R2 (192.168.22.1) via IP SLA / Ruta Flotante.
+[2026-09-25 01:27:16] [RECUPERADO] PC1 Cliente (192.168.20.50) restablecio conectividad ICMP. (Interrupcion resuelta en 4.07s | MTTR: 4.07s)
+[2026-09-25 01:27:16] [RECUPERADO] R1 -> eth3 se restauro a UP. (Falla resuelta en 4.07s | MTTR: 4.07s)
+[2026-09-25 01:27:16] [RECUPERADO] R-ACCESO -> eth1 se restauro a UP. (Falla resuelta en 3.06s | MTTR: 3.06s)
+[2026-09-25 01:27:16] [RECUPERADO] ¡CAMINO PRIMARIO RESTABLECIDO! Trafico NORMALIZADO de vuelta a R1 (192.168.21.1).
+[2026-09-25 01:27:36] [CRITICO] PC1 Cliente (192.168.20.50) sin respuesta ICMP (Host inaccesible).
+[2026-09-25 01:27:36] [CRITICO] R1 -> eth3 cayo a DOWN!
+[2026-09-25 01:27:36] [AUTO-HEAL] Detectada falla en R1 (eth3). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 01:27:37] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R1 para eth3 (latencia: 5.0ms).
+[2026-09-25 01:27:39] [RECUPERADO] PC1 Cliente (192.168.20.50) restablecio conectividad ICMP. (Interrupcion resuelta en 3.07s | MTTR: 3.07s)
+[2026-09-25 01:27:39] [RECUPERADO] R1 -> eth3 se restauro a UP. (Falla resuelta en 3.07s | MTTR: 3.07s)
+[2026-09-25 01:28:23] [CRITICO] PC1 Cliente (192.168.20.50) sin respuesta ICMP (Host inaccesible).
+[2026-09-25 01:34:50] [CRITICO] R2 -> eth3 cayo a DOWN!
+[2026-09-25 01:34:50] [AUTO-HEAL] Detectada falla en R2 (eth3). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 01:34:51] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R2 para eth3 (latencia: 13.6ms).
+[2026-09-25 01:35:29] [RECUPERADO] R2 -> eth3 se restauro a UP. (Falla resuelta en 39.16s | MTTR: 39.16s)
+[2026-09-25 01:40:04] [FAILOVER] ¡FALLA EN CAMINO PRIMARIO! Trafico REDIRIGIDO hacia R2 (192.168.22.1) via IP SLA / Ruta Flotante.
+[2026-09-25 01:40:06] [RECUPERADO] PC1 Cliente (192.168.20.50) restablecio conectividad ICMP. (Interrupcion resuelta en 702.79s | MTTR: 702.79s)
+[2026-09-25 01:40:41] [CRITICO] PC1 Cliente (192.168.20.50) sin respuesta ICMP (Host inaccesible).
+[2026-09-25 01:44:47] [RECUPERADO] PC1 Cliente (192.168.20.50) restablecio conectividad ICMP. (Interrupcion resuelta en 246.61s | MTTR: 246.61s)
+[2026-09-25 01:44:47] [RECUPERADO] ¡CAMINO PRIMARIO RESTABLECIDO! Trafico NORMALIZADO de vuelta a R1 (192.168.21.1).
+[2026-09-25 01:47:03] [CRITICO] PC1 Cliente (192.168.20.50) sin respuesta ICMP (Host inaccesible).
+[2026-09-25 01:47:05] [CRITICO] R-ACCESO -> eth3 cayo a DOWN!
+[2026-09-25 01:47:05] [AUTO-HEAL] Detectada falla en R-ACCESO (eth3). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 01:47:06] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R-ACCESO para eth3 (latencia: 6.9ms).
+[2026-09-25 01:47:08] [RECUPERADO] PC1 Cliente (192.168.20.50) restablecio conectividad ICMP. (Interrupcion resuelta en 5.14s | MTTR: 5.14s)
+[2026-09-25 01:47:08] [RECUPERADO] R-ACCESO -> eth3 se restauro a UP. (Falla resuelta en 3.07s | MTTR: 3.07s)
+[2026-09-25 01:48:32] [FAILOVER] ¡FALLA EN CAMINO PRIMARIO! Trafico REDIRIGIDO hacia R2 (192.168.22.1) via IP SLA / Ruta Flotante.
+[2026-09-25 01:48:34] [CRITICO] R1 -> eth3 cayo a DOWN!
+[2026-09-25 01:48:34] [AUTO-HEAL] Detectada falla en R1 (eth3). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 01:48:35] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R1 para eth3 (latencia: 8.1ms).
+[2026-09-25 01:49:17] [CRITICO] PC1 Cliente (192.168.20.50) sin respuesta ICMP (Host inaccesible).
+[2026-09-25 01:49:30] [RECUPERADO] R1 -> eth3 se restauro a UP. (Falla resuelta en 55.29s | MTTR: 55.29s)
+[2026-09-25 12:34:54] [INFO] Servidor de metricas Prometheus activo en http://0.0.0.0:8000/metrics
+[2026-09-25 12:34:54] [INFO] Topologia en linea. Gateway activo en R-ACCESO: 192.168.21.1
+[2026-09-25 12:37:59] [CRITICO] PC1 Cliente (192.168.20.50) sin respuesta ICMP (Host inaccesible).
+[2026-09-25 12:37:59] [CRITICO] R1 -> eth3 cayo a DOWN!
+[2026-09-25 12:37:59] [AUTO-HEAL] Detectada falla en R1 (eth3). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 12:38:00] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R1 para eth3 (latencia: 10.2ms).
+[2026-09-25 12:38:00] [CRITICO] R-ACCESO -> eth1 cayo a DOWN!
+[2026-09-25 12:38:00] [AUTO-HEAL] Detectada falla en R-ACCESO (eth1). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 12:38:01] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R-ACCESO para eth1 (latencia: 6.3ms).
+[2026-09-25 12:38:01] [FAILOVER] ¡FALLA EN CAMINO PRIMARIO! Trafico REDIRIGIDO hacia R2 (192.168.22.1) via IP SLA / Ruta Flotante.
+[2026-09-25 12:38:03] [RECUPERADO] PC1 Cliente (192.168.20.50) restablecio conectividad ICMP. (Interrupcion resuelta en 4.08s | MTTR: 4.08s)
+[2026-09-25 12:38:03] [RECUPERADO] R1 -> eth3 se restauro a UP. (Falla resuelta en 4.08s | MTTR: 4.08s)
+[2026-09-25 12:38:03] [RECUPERADO] R-ACCESO -> eth1 se restauro a UP. (Falla resuelta en 3.06s | MTTR: 3.06s)
+[2026-09-25 12:38:03] [RECUPERADO] ¡CAMINO PRIMARIO RESTABLECIDO! Trafico NORMALIZADO de vuelta a R1 (192.168.21.1).
+[2026-09-25 12:40:34] [CRITICO] PC1 Cliente (192.168.20.50) sin respuesta ICMP (Host inaccesible).
+[2026-09-25 12:43:49] [INFO] Servidor de metricas Prometheus activo en http://0.0.0.0:8000/metrics
+[2026-09-25 12:43:54] [INFO] Topologia en linea. Gateway activo en R-ACCESO: 192.168.21.1
+[2026-09-25 12:45:17] [INFO] Servidor de metricas Prometheus activo en http://0.0.0.0:8000/metrics
+[2026-09-25 12:45:22] [INFO] Topologia en linea. Gateway activo en R-ACCESO: 192.168.21.1
+[2026-09-25 12:46:42] [INFO] Servidor de metricas Prometheus activo en http://0.0.0.0:8000/metrics
+[2026-09-25 12:46:42] [INFO] Topologia en linea. Gateway activo en R-ACCESO: 192.168.21.1
+[2026-09-25 12:47:06] [CRITICO] PC1 Cliente (192.168.20.50) sin respuesta ICMP (Host inaccesible).
+[2026-09-25 12:47:06] [CRITICO] R1 -> eth3 cayo a DOWN!
+[2026-09-25 12:47:06] [AUTO-HEAL] Detectada falla en R1 (eth3). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 12:47:08] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R1 para eth3 (latencia: 99.1ms).
+[2026-09-25 12:47:08] [CRITICO] R-ACCESO -> eth1 cayo a DOWN!
+[2026-09-25 12:47:08] [AUTO-HEAL] Detectada falla en R-ACCESO (eth1). Evaluando diagnostico y auto-reparacion...
+[2026-09-25 12:47:09] [AUTO-HEAL] Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en R-ACCESO para eth1 (latencia: 48.1ms).
+[2026-09-25 12:47:09] [FAILOVER] ¡FALLA EN CAMINO PRIMARIO! Trafico REDIRIGIDO hacia R2 (192.168.22.1) via IP SLA / Ruta Flotante.
+[2026-09-25 12:47:11] [RECUPERADO] PC1 Cliente (192.168.20.50) restablecio conectividad ICMP. (Interrupcion resuelta en 4.9s | MTTR: 4.9s)
+[2026-09-25 12:47:11] [RECUPERADO] R1 -> eth3 se restauro a UP. (Falla resuelta en 4.93s | MTTR: 4.93s)
+[2026-09-25 12:47:12] [RECUPERADO] R-ACCESO -> eth1 se restauro a UP. (Falla resuelta en 3.93s | MTTR: 3.93s)
+[2026-09-25 12:47:12] [RECUPERADO] ¡CAMINO PRIMARIO RESTABLECIDO! Trafico NORMALIZADO de vuelta a R1 (192.168.21.1).
