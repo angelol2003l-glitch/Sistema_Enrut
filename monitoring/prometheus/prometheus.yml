@@ -1,0 +1,64 @@
+# Prometheus Configuration - Laboratorio de Enrutamiento L3
+# Fase 6: Alertas, SLA y Alertmanager
+
+global:
+  scrape_interval: 2s      # Intervalo de recoleccion base para telemetria agil
+  evaluation_interval: 2s  # Intervalo de evaluacion de reglas de alerta
+  scrape_timeout: 2s       # Timeout para peticiones de scraping
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+rule_files:
+  - "/etc/prometheus/alert_rules.yml"
+
+scrape_configs:
+  # 1. Target de auto-monitoreo de Prometheus
+  - job_name: "prometheus"
+    metrics_path: "/metrics"
+    scrape_interval: 5s
+    static_configs:
+      - targets: ["localhost:9090"]
+        labels:
+          instance: "prometheus"
+          environment: "lab-enrutamiento-ha"
+          role: "telemetry"
+
+  # 2. Monitoreo SNMP de Routers (R1, R2, R-ACCESO, R-GESTION)
+  - job_name: "snmp-routers"
+    scrape_interval: 3s
+    scrape_timeout: 2s
+    metrics_path: /snmp
+    params:
+      module: [router_ha]
+      auth: [redes2026]
+    static_configs:
+      - targets:
+          - "r1"
+          - "r2"
+          - "r-acceso"
+          - "r-gestion"
+        labels:
+          environment: "lab-enrutamiento-ha"
+          role: "router"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: snmp-exporter:9116
+
+  # 3. Telemetria del NMS Python (Self-Healing, Failover, MTTR, Estado PC1)
+  - job_name: "nms-python"
+    scrape_interval: 2s
+    scrape_timeout: 2s
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["nms:8000"]
+        labels:
+          instance: "nms"
+          environment: "lab-enrutamiento-ha"
+          role: "nms"

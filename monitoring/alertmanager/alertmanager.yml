@@ -1,0 +1,19 @@
+global:
+  resolve_timeout: 10s
+
+route:
+  group_by: ['alertname', 'router', 'interface', 'severity']
+  group_wait: 2s
+  group_interval: 5s
+  repeat_interval: 1h
+  receiver: 'noc-internal-receiver'
+  routes:
+    - match:
+        severity: critical
+      receiver: 'noc-internal-receiver'
+    - match:
+        severity: warning
+      receiver: 'noc-internal-receiver'
+
+receivers:
+  - name: 'noc-internal-receiver'

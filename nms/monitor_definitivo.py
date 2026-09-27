@@ -1,12 +1,24 @@
 #!/usr/bin/env python3
+"""
+Motor de Telemetria NMS con Auto-Remediacion (Self-Healing) y Calculo de MTTR
+Laboratorio de Enrutamiento L3 con Alta Disponibilidad
+Fase 5: Observabilidad Avanzada de Failover, Self-Healing y MTTR
+"""
 import time
 import subprocess
 import datetime
 import os
 import sys
+import json
+import re
+import requests
+from prometheus_client import start_http_server, Gauge, Counter, Histogram
 
 COMMUNITY = "redes2026"
 CLIENT_IP = "192.168.20.50"
+REMEDIATION_PORT = 5000
+PROMETHEUS_PORT = 8000
+
 ROUTERS = {
     "R1": "192.168.11.2",
     "R2": "192.168.12.2"
@@ -14,12 +26,163 @@ ROUTERS = {
 R_ACCESO_IPS = ["192.168.21.2", "192.168.22.2"]
 LOG_FILE = "/app/incidentes_red.log"
 
+# ==============================================================================
+# METRICAS PROMETHEUS (FASE 5: OBSERVABILIDAD AVANZADA HA & SELF-HEALING)
+# ==============================================================================
+
+# 1. Estados de Conectividad y Ruta
+PROM_PC1_REACHABLE = Gauge(
+    "network_pc1_reachable",
+    "Estado de conectividad ICMP hacia el host cliente PC1 (1=UP/Alcanzable, 0=DOWN/Inaccesible)"
+)
+PROM_PRIMARY_PATH_ACTIVE = Gauge(
+    "network_primary_path_active",
+    "Estado del camino primario L3 en R-ACCESO hacia R1 (1=Primario Activo/R1, 0=Secundario/R2)"
+)
+PROM_BACKUP_PATH_ACTIVE = Gauge(
+    "network_backup_path_active",
+    "Estado del camino de contingencia L3 en R-ACCESO hacia R2 (1=Secundario Activo/R2, 0=Inactivo)"
+)
+PROM_FAILOVER_STATE = Gauge(
+    "network_failover_state",
+    "Estado discreto de conmutacion L3 (0=Nominal/Primario R1, 1=Failover Activo/R2)",
+    ["router"]
+)
+PROM_INTERFACE_DOWN_STATE = Gauge(
+    "network_interface_down_state",
+    "Estado de caida de interfaces monitoreadas (1=DOWN, 0=UP)",
+    ["router", "interface"]
+)
+
+# 2. Conmutacion de Ruta (Failover)
+PROM_FAILOVERS_TOTAL = Counter(
+    "network_failovers_total",
+    "Total acumulado de eventos de failover L3 conmutados",
+    ["router", "path", "reason"]
+)
+
+# 3. Auto-remediacion (Self-Healing NetDevOps)
+PROM_AUTOHEAL_TOTAL = Counter(
+    "network_autoheal_total",
+    "Total acumulado de acciones de auto-remediacion solicitadas",
+    ["router", "interface"]
+)
+PROM_AUTOHEAL_SUCCESS_TOTAL = Counter(
+    "network_autoheal_success_total",
+    "Total de acciones de auto-remediacion ejecutadas exitosamente por el agente NetDevOps",
+    ["router", "interface"]
+)
+PROM_AUTOHEAL_FAILURE_TOTAL = Counter(
+    "network_autoheal_failure_total",
+    "Total de acciones de auto-remediacion fallidas",
+    ["router", "interface"]
+)
+PROM_AUTOHEAL_ACTIVE = Gauge(
+    "network_autoheal_active",
+    "Indica si hay un proceso de auto-remediacion en curso para una interfaz (1=En curso, 0=Inactivo)",
+    ["router", "interface"]
+)
+PROM_AUTOHEAL_DURATION_SECONDS = Histogram(
+    "network_autoheal_duration_seconds",
+    "Latencia del protocolo de remediacion HTTP hacia el router (segundos)",
+    ["router", "interface"],
+    buckets=[0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.0]
+)
+
+# 4. Incidentes y Recuperaciones
+PROM_INCIDENTS_TOTAL = Counter(
+    "network_incidents_total",
+    "Total acumulado de incidentes de red detectados",
+    ["router", "event"]
+)
+PROM_CRITICAL_INCIDENTS_TOTAL = Counter(
+    "network_critical_incidents_total",
+    "Total acumulado de incidentes criticos (caida de enlaces o hosts)",
+    ["router", "event"]
+)
+PROM_RECOVERIES_TOTAL = Counter(
+    "network_recoveries_total",
+    "Total acumulado de recuperaciones confirmadas de conectividad o enlaces",
+    ["router", "event"]
+)
+
+# 5. MTTR (Mean Time to Recovery)
+PROM_MTTR_SECONDS = Histogram(
+    "network_mttr_seconds",
+    "Distribucion y acumulado del tiempo medio de recuperacion ante fallas (segundos)",
+    ["target"],
+    buckets=[0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 7.5, 10.0, 15.0, 30.0, 60.0]
+)
+PROM_LAST_MTTR_SECONDS = Gauge(
+    "network_last_mttr_seconds",
+    "Ultimo tiempo de recuperacion medido ante falla (segundos)",
+    ["target"]
+)
+PROM_MTTR_CURRENT_SECONDS = Gauge(
+    "network_mttr_current_seconds",
+    "MTTR promedio historico acumulado del sistema (segundos)"
+)
+
+# Lista en memoria de todas las muestras de MTTR
+ALL_MTTR_SAMPLES = []
+
+def init_prometheus_metrics(initial_gw, client_online):
+    """Inicializa contadores y estados para evitar series ausentes en Prometheus"""
+    is_primary = bool(initial_gw and "21.1" in initial_gw)
+    PROM_PC1_REACHABLE.set(1 if client_online else 0)
+    PROM_PRIMARY_PATH_ACTIVE.set(1 if is_primary else 0)
+    PROM_BACKUP_PATH_ACTIVE.set(0 if is_primary else 1)
+    PROM_FAILOVER_STATE.labels(router="r-acceso").set(0 if is_primary else 1)
+    
+    # Pre-inicializar interfaces clave
+    monitored_interfaces = [
+        ("R1", "eth3"),
+        ("R2", "eth3"),
+        ("R-ACCESO", "eth1"),
+        ("R-ACCESO", "eth2")
+    ]
+    for r, iface in monitored_interfaces:
+        PROM_INTERFACE_DOWN_STATE.labels(router=r, interface=iface).set(0)
+        PROM_AUTOHEAL_ACTIVE.labels(router=r, interface=iface).set(0)
+        PROM_AUTOHEAL_TOTAL.labels(router=r, interface=iface)
+        PROM_AUTOHEAL_SUCCESS_TOTAL.labels(router=r, interface=iface)
+        PROM_AUTOHEAL_FAILURE_TOTAL.labels(router=r, interface=iface)
+
+    PROM_FAILOVERS_TOTAL.labels(router="r-acceso", path="secondary", reason="primary_link_failure")
+    for r in ["R1", "R2", "R-ACCESO"]:
+        PROM_INCIDENTS_TOTAL.labels(router=r, event="interface_down")
+        PROM_CRITICAL_INCIDENTS_TOTAL.labels(router=r, event="interface_down")
+        PROM_RECOVERIES_TOTAL.labels(router=r, event="interface_up")
+    PROM_INCIDENTS_TOTAL.labels(router="pc1", event="icmp_failure")
+    PROM_CRITICAL_INCIDENTS_TOTAL.labels(router="pc1", event="icmp_failure")
+    PROM_RECOVERIES_TOTAL.labels(router="pc1", event="icmp_recovery")
+    PROM_RECOVERIES_TOTAL.labels(router="R-ACCESO", event="path_restored")
+
+    # Cargar muestras historicas de MTTR desde la bitacora forense para MTTR inicial
+    if os.path.exists(LOG_FILE):
+        try:
+            with open(LOG_FILE, "r", encoding="utf-8") as f:
+                for line in f:
+                    m = re.search(r"MTTR:\s*([0-9\.]+)s", line)
+                    if m:
+                        ALL_MTTR_SAMPLES.append(float(m.group(1)))
+            if ALL_MTTR_SAMPLES:
+                avg = round(sum(ALL_MTTR_SAMPLES) / len(ALL_MTTR_SAMPLES), 2)
+                PROM_MTTR_CURRENT_SECONDS.set(avg)
+                PROM_LAST_MTTR_SECONDS.labels(target="system").set(ALL_MTTR_SAMPLES[-1])
+        except Exception:
+            pass
+
+# ==============================================================================
+# LOGICA DE SONDEO Y TELEMETRIA NMS
+# ==============================================================================
+
 def log_event(level, message):
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     formatted = f"[{now}] [{level}] {message}"
     print(formatted, flush=True)
     with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(formatted + "\n")
+        f.write(f"{formatted}\n")
 
 def ping_host(ip, timeout=1):
     try:
@@ -57,7 +220,6 @@ def snmp_walk(ip, oid, timeout=1):
     return results
 
 def get_interfaces(ip):
-    # Returns {if_name: status_int} (1=UP, 2=DOWN)
     names = {}
     statuses = {}
     raw_descr = snmp_walk(ip, "1.3.6.1.2.1.2.2.1.2")
@@ -80,59 +242,158 @@ def get_interfaces(ip):
             res[name] = statuses[idx]
     return res
 
-def get_r_acceso_nexthop():
-    # Multi-hop query: try 192.168.21.2 first, then 192.168.22.2
+def get_r_acceso_nexthop(r_acceso_eth1_status=1):
+    # Si la interfaz primaria hacia R1 esta DOWN en R-ACCESO, la ruta flotante conmuta a R2 (192.168.22.1)
+    if r_acceso_eth1_status == 2:
+        return "192.168.22.1", R_ACCESO_IPS[1]
+
     for ip in R_ACCESO_IPS:
         hop = snmp_get(ip, "1.3.6.1.2.1.4.21.1.7.0.0.0.0", timeout=1)
         if hop and hop != "0.0.0.0":
             return hop, ip
     return None, None
 
+def trigger_self_healing(router_name, router_ip, if_name):
+    """Envia orden de auto-remediacion al agente NetDevOps del router con medicion de duracion"""
+    t_start = time.time()
+    try:
+        url = f"http://{router_ip}:{REMEDIATION_PORT}/remediate"
+        payload = {"action": "restart_interface", "interface": if_name}
+        resp = requests.post(url, json=payload, timeout=2)
+        exec_dur = round(time.time() - t_start, 4)
+        if resp.status_code == 200:
+            PROM_AUTOHEAL_DURATION_SECONDS.labels(router=router_name, interface=if_name).observe(exec_dur)
+            ms_info = f" (latencia: {round(exec_dur*1000, 1)}ms)"
+            log_event("AUTO-HEAL", f"Protocolo NetDevOps: Orden de reactivacion ejecutada con exito en {router_name} para {if_name}{ms_info}.")
+            return True
+    except Exception as e:
+        log_event("ERROR", f"Fallo al conectar con agente de remediacion en {router_name} ({e})")
+    return False
+
+def record_mttr_sample(target_label, elapsed):
+    """Registra una muestra de MTTR en todas las metricas correspondientes"""
+    ALL_MTTR_SAMPLES.append(elapsed)
+    avg_mttr = round(sum(ALL_MTTR_SAMPLES) / len(ALL_MTTR_SAMPLES), 2)
+    PROM_MTTR_CURRENT_SECONDS.set(avg_mttr)
+    PROM_MTTR_SECONDS.labels(target=target_label).observe(elapsed)
+    PROM_LAST_MTTR_SECONDS.labels(target=target_label).set(elapsed)
+
 def main():
-    print("Iniciando Monitor de Red y Telemetria NMS...", flush=True)
-    hop, active_ip = get_r_acceso_nexthop()
-    initial_gw = hop if hop else "192.168.21.1"
+    print("Iniciando Motor de Telemetria NMS Fase 5 (HA, Self-Healing y MTTR)...", flush=True)
     
+    # Iniciar Servidor de Metricas Prometheus
+    try:
+        start_http_server(PROMETHEUS_PORT)
+        log_event("INFO", f"Servidor de metricas Prometheus activo en http://0.0.0.0:{PROMETHEUS_PORT}/metrics")
+    except Exception as e:
+        log_event("ERROR", f"Error al iniciar servidor de metricas Prometheus: {e}")
+
+    hop, active_ip = get_r_acceso_nexthop(r_acceso_eth1_status=1)
+    initial_gw = hop if hop else "192.168.21.1"
+    initial_client_up = ping_host(CLIENT_IP)
+    
+    init_prometheus_metrics(initial_gw, initial_client_up)
     log_event("INFO", f"Topologia en linea. Gateway activo en R-ACCESO: {initial_gw}")
     
-    last_client_up = ping_host(CLIENT_IP)
+    last_client_up = initial_client_up
+    client_fail_time = None
     last_gateway = initial_gw
-    last_ifaces = {} # (router_name, if_name) -> status (1=UP, 2=DOWN)
+    last_ifaces = {}      # (router_name, if_name) -> status (1=UP, 2=DOWN)
+    iface_fail_times = {} # (router_name, if_name) -> timestamp de caida
     
     while True:
         try:
-            # 1. Auditoria de PC1 Cliente
+            # 1. Auditoria de PC1 Cliente (ICMP)
             client_up = ping_host(CLIENT_IP)
+            PROM_PC1_REACHABLE.set(1 if client_up else 0)
+            
             if client_up != last_client_up:
                 if not client_up:
+                    client_fail_time = time.time()
+                    PROM_INCIDENTS_TOTAL.labels(router="pc1", event="icmp_failure").inc()
+                    PROM_CRITICAL_INCIDENTS_TOTAL.labels(router="pc1", event="icmp_failure").inc()
                     log_event("CRITICO", f"PC1 Cliente ({CLIENT_IP}) sin respuesta ICMP (Host inaccesible).")
                 else:
-                    log_event("RECUPERADO", f"PC1 Cliente ({CLIENT_IP}) restablecio conectividad ICMP.")
+                    dur_str = ""
+                    PROM_RECOVERIES_TOTAL.labels(router="pc1", event="icmp_recovery").inc()
+                    if client_fail_time:
+                        elapsed = round(time.time() - client_fail_time, 2)
+                        record_mttr_sample("pc1", elapsed)
+                        dur_str = f" (Interrupcion resuelta en {elapsed}s | MTTR: {elapsed}s)"
+                        client_fail_time = None
+                    log_event("RECUPERADO", f"PC1 Cliente ({CLIENT_IP}) restablecio conectividad ICMP.{dur_str}")
                 last_client_up = client_up
 
-            # 2. Auditoria de Gateway R-ACCESO (Failover)
-            curr_gw, target_ip = get_r_acceso_nexthop()
-            if curr_gw and curr_gw != last_gateway:
-                if "22.1" in curr_gw or "10.0.0.2" in curr_gw:
-                    log_event("FAILOVER", f"¡FALLA EN CAMINO PRIMARIO! Trafico REDIRIGIDO hacia R2 ({curr_gw}) via IP SLA / Ruta Flotante.")
-                elif "21.1" in curr_gw:
-                    log_event("RECUPERADO", f"¡CAMINO PRIMARIO RESTABLECIDO! Trafico NORMALIZADO de vuelta a R1 ({curr_gw}).")
-                last_gateway = curr_gw
-
-            # 3. Auditoria de Interfaces Fisicas
+            # 2. Auditoria de Interfaces Fisicas y Auto-Remediacion (Self-Healing)
+            target_ip = R_ACCESO_IPS[1] if (last_ifaces.get(("R-ACCESO", "eth1")) == 2) else R_ACCESO_IPS[0]
             nodes_to_check = dict(ROUTERS)
-            nodes_to_check["R-ACCESO"] = target_ip if target_ip else R_ACCESO_IPS[0]
+            nodes_to_check["R-ACCESO"] = target_ip
             
+            r_acceso_eth1_st = 1
             for r_name, r_ip in nodes_to_check.items():
                 ifaces = get_interfaces(r_ip)
                 for if_name, st in ifaces.items():
                     key = (r_name, if_name)
+                    if key == ("R-ACCESO", "eth1"):
+                        r_acceso_eth1_st = st
+
                     if key in last_ifaces and last_ifaces[key] != st:
                         if st == 2:
+                            # FASE 1: DOWN detectado
+                            iface_fail_times[key] = time.time()
+                            PROM_INTERFACE_DOWN_STATE.labels(router=r_name, interface=if_name).set(1)
+                            PROM_AUTOHEAL_ACTIVE.labels(router=r_name, interface=if_name).set(1)
+                            PROM_INCIDENTS_TOTAL.labels(router=r_name, event="interface_down").inc()
+                            PROM_CRITICAL_INCIDENTS_TOTAL.labels(router=r_name, event="interface_down").inc()
                             log_event("CRITICO", f"{r_name} -> {if_name} cayo a DOWN!")
+                            
+                            # FASE 2: Remediacion solicitada
+                            log_event("AUTO-HEAL", f"Detectada falla en {r_name} ({if_name}). Evaluando diagnostico y auto-reparacion...")
+                            time.sleep(1)
+                            PROM_AUTOHEAL_TOTAL.labels(router=r_name, interface=if_name).inc()
+                            
+                            # FASE 3: Remediacion ejecutada
+                            success = trigger_self_healing(r_name, r_ip, if_name)
+                            if success:
+                                PROM_AUTOHEAL_SUCCESS_TOTAL.labels(router=r_name, interface=if_name).inc()
+                            else:
+                                PROM_AUTOHEAL_FAILURE_TOTAL.labels(router=r_name, interface=if_name).inc()
+
                         elif st == 1:
-                            log_event("RECUPERADO", f"{r_name} -> {if_name} se restauro a UP.")
+                            # FASE 4: Interfaz recuperada
+                            PROM_INTERFACE_DOWN_STATE.labels(router=r_name, interface=if_name).set(0)
+                            PROM_AUTOHEAL_ACTIVE.labels(router=r_name, interface=if_name).set(0)
+                            PROM_RECOVERIES_TOTAL.labels(router=r_name, event="interface_up").inc()
+                            dur_str = ""
+                            if key in iface_fail_times:
+                                elapsed = round(time.time() - iface_fail_times.pop(key), 2)
+                                target_lbl = f"{r_name}:{if_name}"
+                                record_mttr_sample(target_lbl, elapsed)
+                                dur_str = f" (Falla resuelta en {elapsed}s | MTTR: {elapsed}s)"
+                            log_event("RECUPERADO", f"{r_name} -> {if_name} se restauro a UP.{dur_str}")
                     last_ifaces[key] = st
+
+            # 3. Auditoria de Gateway R-ACCESO (Failover L3 Correlacionado)
+            curr_gw, _ = get_r_acceso_nexthop(r_acceso_eth1_status=r_acceso_eth1_st)
+            if curr_gw:
+                if "21.1" in curr_gw:
+                    PROM_PRIMARY_PATH_ACTIVE.set(1)
+                    PROM_BACKUP_PATH_ACTIVE.set(0)
+                    PROM_FAILOVER_STATE.labels(router="r-acceso").set(0)
+                else:
+                    PROM_PRIMARY_PATH_ACTIVE.set(0)
+                    PROM_BACKUP_PATH_ACTIVE.set(1)
+                    PROM_FAILOVER_STATE.labels(router="r-acceso").set(1)
+
+            if curr_gw and curr_gw != last_gateway:
+                if "22.1" in curr_gw or "10.0.0.2" in curr_gw:
+                    PROM_FAILOVERS_TOTAL.labels(router="r-acceso", path="secondary", reason="primary_link_failure").inc()
+                    PROM_INCIDENTS_TOTAL.labels(router="R-ACCESO", event="failover_r2").inc()
+                    log_event("FAILOVER", f"¡FALLA EN CAMINO PRIMARIO! Trafico REDIRIGIDO hacia R2 ({curr_gw}) via IP SLA / Ruta Flotante.")
+                elif "21.1" in curr_gw:
+                    PROM_RECOVERIES_TOTAL.labels(router="R-ACCESO", event="path_restored").inc()
+                    log_event("RECUPERADO", f"¡CAMINO PRIMARIO RESTABLECIDO! Trafico NORMALIZADO de vuelta a R1 ({curr_gw}).")
+                last_gateway = curr_gw
 
         except Exception as e:
             pass

@@ -4,6 +4,23 @@ set -euo pipefail
 
 echo "Iniciando servicios en la topologia..."
 
+# 0. Verificacion de IPs y Rutas Base
+docker exec nms ip addr add 192.168.10.10/24 dev eth1 2>/dev/null || true
+docker exec nms ip route replace 192.168.0.0/16 via 192.168.10.1 dev eth1 2>/dev/null || true
+docker exec nms ip route replace 10.0.0.0/8 via 192.168.10.1 dev eth1 2>/dev/null || true
+
+docker exec pc1 ip addr add 192.168.20.50/24 dev eth1 2>/dev/null || true
+docker exec pc1 ip route replace default via 192.168.20.1 2>/dev/null || true
+
+for r in r-gestion r1 r2 r-acceso; do
+    if ! docker exec "$r" pgrep -f "snmpd" >/dev/null 2>&1; then
+        docker exec "$r" snmpd -u root -C -c /etc/snmp/snmpd.conf 2>/dev/null || true
+        echo "  ✓ snmpd iniciado en $r"
+    else
+        echo "  ✓ snmpd ya activo en $r"
+    fi
+done
+
 # 1. Routers - Agentes Opcionales de Auto-Remediacion
 for node in r1 r2 r-acceso; do
     if docker exec "$node" test -f /usr/local/bin/remediation_server.py 2>/dev/null; then

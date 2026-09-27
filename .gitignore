@@ -13,17 +13,6 @@ clab-*/
 *.log
 !nms/incidentes_red.log
 
-# Documentos internos excluidos
-DOCUMENTACION.md
-PLAN_FASES.md
+# Documentos temporales
+*.tmp
 
-# Observabilidad externa (Grafana, Prometheus, Alertmanager - fase avanzada)
-docker-compose.yml
-monitoring/
-scripts/verify_grafana.sh
-scripts/verify_prometheus.sh
-scripts/verify_snmp_exporter.sh
-scripts/verify_alertmanager.sh
-scripts/verify_nms.sh
-scripts/verify_ha.sh
-configs/remediation_server.py

@@ -1,0 +1,78 @@
+{
+  "freeTextAnnotations": [],
+  "freeShapeAnnotations": [],
+  "trafficRateAnnotations": [],
+  "groupStyleAnnotations": [],
+  "networkNodeAnnotations": [],
+  "nodeAnnotations": [
+    {
+      "id": "nms",
+      "position": {
+        "x": 480,
+        "y": 120
+      },
+      "icon": "server",
+      "role": "server"
+    },
+    {
+      "id": "r-gestion",
+      "position": {
+        "x": 480,
+        "y": 260
+      },
+      "icon": "router",
+      "role": "router"
+    },
+    {
+      "id": "r1",
+      "position": {
+        "x": 600,
+        "y": 360
+      },
+      "icon": "router",
+      "role": "router"
+    },
+    {
+      "id": "r2",
+      "position": {
+        "x": 320,
+        "y": 360
+      },
+      "icon": "router",
+      "role": "router"
+    },
+    {
+      "id": "r-acceso",
+      "position": {
+        "x": 460,
+        "y": 480
+      },
+      "icon": "router",
+      "role": "router"
+    },
+    {
+      "id": "pc1",
+      "position": {
+        "x": 460,
+        "y": 640
+      },
+      "icon": "client",
+      "role": "client"
+    }
+  ],
+  "edgeAnnotations": [],
+  "aliasEndpointAnnotations": [],
+  "viewerSettings": {
+    "style": "default",
+    "linkLabelMode": "show-all",
+    "lastNonTelemetryLinkLabelMode": "show-all",
+    "telemetryNodeSizePx": 40,
+    "telemetryInterfaceSizePercent": 100,
+    "showRateLabels": false,
+    "autoCreateTrafficRateAnnotations": false,
+    "gridLineWidth": 0.5,
+    "gridStyle": "dotted",
+    "gridColor": null,
+    "gridBgColor": null
+  }
+}

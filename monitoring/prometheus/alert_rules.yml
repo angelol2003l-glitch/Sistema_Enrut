@@ -1,0 +1,93 @@
+groups:
+  - name: network_infrastructure_alerts
+    rules:
+      # 1. Router no disponible (SNMP)
+      - alert: RouterDown
+        expr: up{job="snmp-routers"} == 0
+        for: 5s
+        labels:
+          severity: critical
+          alertname: RouterDown
+          router: "{{ $labels.instance }}"
+        annotations:
+          summary: "Router {{ $labels.instance }} inaccesible (SNMP)"
+          description: "El dispositivo {{ $labels.instance }} no responde a consultas SNMP en el plano de gestion."
+
+      # 2. Interfaces criticas de transporte DOWN
+      - alert: CriticalInterfaceDown
+        expr: ifOperStatus{ifName=~"eth1|eth2|eth3", instance=~"r1|r2|r-acceso"} == 2
+        for: 2s
+        labels:
+          severity: critical
+          alertname: CriticalInterfaceDown
+          router: "{{ $labels.instance }}"
+          interface: "{{ $labels.ifName }}"
+        annotations:
+          summary: "Interfaz critica {{ $labels.ifName }} en {{ $labels.instance }} cayo a DOWN"
+          description: "El enlace de transporte {{ $labels.ifName }} en el router {{ $labels.instance }} ha caido a estado inoperativo."
+
+      # 3. Perdida de conectividad de host cliente
+      - alert: ClientHostUnreachable
+        expr: network_pc1_reachable == 0
+        for: 2s
+        labels:
+          severity: critical
+          alertname: ClientHostUnreachable
+          router: "r-acceso"
+          interface: "eth3"
+        annotations:
+          summary: "Host cliente PC1 sin conectividad ICMP"
+          description: "El host final PC1 (192.168.20.50) ha dejado de responder a las pruebas ICMP desde el NMS."
+
+      # 4. Failover L3: Conmutacion hacia camino de contingencia
+      - alert: L3RouteFailoverActive
+        expr: network_failover_state{router="r-acceso"} == 1
+        for: 2s
+        labels:
+          severity: warning
+          alertname: L3RouteFailoverActive
+          router: "r-acceso"
+          path: "secondary"
+        annotations:
+          summary: "Failover L3 activo: Trafico conmutado hacia camino secundario (R2)"
+          description: "La ruta primaria hacia R1 esta inactiva; el trafico de acceso esta fluyendo por la ruta de contingencia R2 (192.168.22.1)."
+
+      # 5. Proceso de Auto-Remediacion NetDevOps en ejecucion
+      - alert: AutoHealingInProgress
+        expr: network_autoheal_active == 1
+        for: 1s
+        labels:
+          severity: warning
+          alertname: AutoHealingInProgress
+          router: "{{ $labels.router }}"
+          interface: "{{ $labels.interface }}"
+        annotations:
+          summary: "Auto-Remediacion en curso para {{ $labels.router }}:{{ $labels.interface }}"
+          description: "El NMS ha detectado la caida y se encuentra disparando el protocolo NetDevOps de recuperacion."
+
+      # 6. Fallo en el proceso de Auto-Remediacion
+      - alert: AutoHealingFailed
+        expr: increase(network_autoheal_failure_total[1m]) > 0
+        for: 0s
+        labels:
+          severity: critical
+          alertname: AutoHealingFailed
+          router: "{{ $labels.router }}"
+          interface: "{{ $labels.interface }}"
+        annotations:
+          summary: "Auto-Remediacion fallida en {{ $labels.router }}:{{ $labels.interface }}"
+          description: "La orden de reactivacion automatica enviada al router no pudo completarse con exito."
+
+      # 7. Tiempo de recuperacion (MTTR) fuera de umbral de SLA (7.0s)
+      # Justificacion tecnica: El MTTR tipico de este laboratorio es de 3.0s a 4.2s (media 3.64s).
+      # Un tiempo mayor a 7.0s denota retardo anomalico o falla en el primer intento de remediacion.
+      - alert: MTTRThresholdExceeded
+        expr: network_last_mttr_seconds > 7.0
+        for: 0s
+        labels:
+          severity: warning
+          alertname: MTTRThresholdExceeded
+          router: "{{ $labels.target }}"
+        annotations:
+          summary: "MTTR excedio el umbral de SLA ({{ $value }}s > 7.0s)"
+          description: "La resolucion del incidente en {{ $labels.target }} tardo {{ $value }}s, superando el limite de 7.0s del SLA de alta resiliencia."

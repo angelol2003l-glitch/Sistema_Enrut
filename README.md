@@ -147,7 +147,68 @@ Abre en tu navegador:
 
 ---
 
-## 7. Monitoreo y Bitácora Forense NMS
+## 7. Uso de la Extensión de Containerlab en VS Code / Antigravity (Entorno WSL2 y Linux)
+
+Para una experiencia visual y de gestión interactiva sin salir de tu editor de código:
+
+### A. Requisito Crítico: Abrir el Editor en el Entorno WSL2
+Si estás en **Windows**, la extensión **NO** debe correr en Windows nativo sino dentro de tu máquina Linux:
+1. Abre tu terminal de **Ubuntu / WSL2**.
+2. Dirígete a la carpeta del proyecto:
+   ```bash
+   cd ~/Sistema_Enrut
+   ```
+3. Abre el editor conectado directamente a WSL ejecutando:
+   ```bash
+   code .
+   ```
+   *(O haz clic en el botón verde inferior izquierdo `><` de la ventana y selecciona **"Connect to WSL"**).*
+   > **¿Por qué?** Containerlab y los contenedores de red se ejecutan en el kernel de Linux. Al abrir el editor dentro de WSL, la extensión tiene acceso directo a Docker, a los sockets del kernel y a los comandos `clab`.
+
+### B. Instalar la Extensión
+1. Abre la pestaña de Extensiones (`Ctrl + Shift + X`).
+2. Busca: **Containerlab** (desarrollada por *srl-labs*).
+3. Haz clic en **Install in WSL: Ubuntu**.
+
+### C. Funcionalidades y Cómo Usarla
+* **Visor Gráfico de Topología:**
+  * Haz clic derecho sobre el archivo `topology.clab.yml` en el explorador de archivos.
+  * Selecciona **"Containerlab: Open Topology Viewer"** (o haz clic en el icono del grafo arriba a la derecha del editor).
+  * Se abrirá el diagrama visual interactivo con todos los routers y enlaces.
+  * *Nota:* Este proyecto ya incluye los metadatos visuales y el archivo `topology.clab.yml.annotations.json` con los iconos correctos (`router`, `server`, `client`).
+* **Acciones Rápidas desde el Panel Lateral:**
+  * En la barra lateral izquierda aparecerá el icono de Containerlab.
+  * Al desplegar la topología verás la lista de nodos (`r1`, `r2`, `r-acceso`, `nms`, etc.).
+  * **Abrir Terminal / Vtysh:** Haz clic derecho sobre cualquier router y selecciona **"Attach Shell"** o abre una terminal y ejecuta:
+    ```bash
+    docker exec -it <router> vtysh
+    ```
+  * **Deploy / Destroy:** Puedes desplegar o destruir el laboratorio con un solo clic desde el menú lateral.
+  * **Captura de Paquetes en Vivo:** Clic derecho sobre cualquier enlace $\rightarrow$ **"Capture Packet (Wireshark)"** para inspeccionar paquetes ICMP, OSPF y SNMP en tiempo real.
+
+---
+
+## 8. Dashboard Centralizado NOC en Grafana (Observabilidad)
+
+El proyecto cuenta con un stack moderno de observabilidad (Prometheus + Grafana + SNMP Exporter + Alertmanager):
+
+### A. Iniciar el stack de monitoreo
+```bash
+docker compose up -d
+```
+
+### B. Acceso a Grafana
+* **URL:** 👉 **[http://localhost:3000](http://localhost:3000)**
+* **Credenciales:** Usuario `admin` / Contraseña `admin`
+* **Dashboard Oficial:** **NOC L3 High Availability & Self-Healing** (`noc_l3_ha.json`)
+  * Monitoreo de estado de 20 interfaces por SNMP.
+  * Detección en tiempo real de Conmutación L3 (Failover R1 $\leftrightarrow$ R2).
+  * Indicador de Auto-Recuperación NetDevOps (Self-Healing) y cálculo del tiempo de reparación (MTTR).
+
+---
+
+## 9. Monitoreo y Bitácora Forense NMS
+
 
 ### A. Ver la bitácora de eventos en tiempo real
 Visualiza en vivo los eventos de conectividad, caídas de enlaces y conmutaciones:
@@ -163,7 +224,7 @@ python3 nms/reporte_sla.py
 
 ---
 
-## 8. Comandos de Prueba y Validación
+## 10. Comandos de Prueba y Validación
 
 ### A. Probar conmutación por falla (Failover automático)
 Ejecuta el script de prueba automatizado:
@@ -179,7 +240,7 @@ bash scripts/verify_snmp.sh
 
 ---
 
-## 9. Comandos Útiles de Operación
+## 11. Comandos Útiles de Operación
 
 ### Entrar a la consola interactiva de un router (FRR / vtysh)
 ```bash
@@ -203,7 +264,7 @@ docker exec -it pc1 ping 8.8.8.8
 
 ---
 
-## 10. Solución de Problemas (Troubleshooting WSL2 & Docker)
+## 12. Solución de Problemas (Troubleshooting WSL2 & Docker)
 
 ### Problema: `Failed to lookup link "br-xxxx": Link not found` o `namespace path not available`
 * **Causa**: Ocurre en Windows con WSL2 cuando **Docker Desktop** intercepta las llamadas a la API de Docker mediante su proxy. Docker Desktop crea los puentes de red dentro de su propia máquina virtual de utilidad (`docker-desktop`), por lo que Containerlab (que corre en Ubuntu) no puede encontrar el dispositivo de red ni inyectar las interfaces en el kernel.
@@ -229,7 +290,7 @@ bash scripts/start_services.sh
 
 ---
 
-## 11. Detener y Destruir el Laboratorio
+## 13. Detener y Destruir el Laboratorio
 
 Cuando termines tu sesión de trabajo, elimina la topología y limpia las interfaces virtuales:
 
@@ -239,6 +300,7 @@ sudo clab destroy -t topology.clab.yml --cleanup
 
 ---
 
-## Historial de Construcción del Proyecto
-Para conocer a detalle todos los pasos técnicos realizados para crear y configurar este proyecto desde cero, consulta el archivo:
-📄 **`PASOS_REALIZADOS.md`**
+## 14. Matriz de Fallas y Auto-Recuperación
+Para conocer a detalle el comportamiento de cada interfaz de la red, los escenarios de contingencia y las pruebas de auto-remediación, consulta:
+📄 **[MATRIZ_FALLAS_INTERFACES.md](MATRIZ_FALLAS_INTERFACES.md)**
+
