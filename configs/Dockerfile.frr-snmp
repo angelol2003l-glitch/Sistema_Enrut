@@ -1,3 +1,10 @@
 FROM frrouting/frr:latest
 
-RUN apk update && apk add --no-cache net-snmp net-snmp-tools iputils
+RUN apk update && apk add --no-cache net-snmp net-snmp-tools iputils bash
+
+# Auto-ingreso a vtysh al abrir terminal interactiva ("Shell" en extension Containerlab)
+COPY vtysh_profile.sh /etc/profile.d/vtysh.sh
+RUN chmod +x /etc/profile.d/vtysh.sh && \
+    touch /etc/frr/vtysh.conf && \
+    echo '[ -f /etc/profile.d/vtysh.sh ] && . /etc/profile.d/vtysh.sh' >> /root/.bashrc && \
+    echo '[ -f /etc/profile.d/vtysh.sh ] && . /etc/profile.d/vtysh.sh' >> /root/.profile

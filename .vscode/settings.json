@@ -1,0 +1,5 @@
+{
+  "containerlab.node.execCommandMapping": {
+    "linux": "bash -l"
+  }
+}
