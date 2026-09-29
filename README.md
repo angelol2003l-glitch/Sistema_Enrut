@@ -51,9 +51,16 @@ R-GESTION conecta el plano de gestión. R1 es la ruta principal y R2 la de respa
 
 ## Quick Start
 
-Requiere Docker, Docker Compose, Containerlab y Python 3 en Linux o WSL2. Desde la raíz del repositorio:
+Requiere Docker, Docker Compose, Containerlab y Python 3 en Linux o WSL2.
 
-1. Crea el archivo local de credenciales y sustituye los dos valores `CHANGE_ME` por valores propios. No lo subas a Git.
+1. Clona el repositorio y entra en el proyecto.
+
+   ```bash
+   git clone https://github.com/angelol2003l-glitch/Sistema_Enrut.git
+   cd Sistema_Enrut
+   ```
+
+2. Crea el archivo local de credenciales y sustituye los dos valores `CHANGE_ME` por valores propios. No lo subas a Git.
 
    ```bash
    install -m 600 .env.example .env
@@ -61,7 +68,7 @@ Requiere Docker, Docker Compose, Containerlab y Python 3 en Linux o WSL2. Desde 
    python3 scripts/render_runtime_config.py
    ```
 
-2. Construye las imágenes y despliega la topología. Containerlab crea la red externa `clab` que necesita Compose.
+3. Construye las imágenes y despliega la topología. Containerlab crea la red externa `clab` que necesita Compose.
 
    ```bash
    docker build -t frr-snmp:latest -f configs/Dockerfile.frr-snmp configs/
@@ -69,7 +76,7 @@ Requiere Docker, Docker Compose, Containerlab y Python 3 en Linux o WSL2. Desde 
    sudo clab deploy -t topology.clab.yml
    ```
 
-3. Inicia la plataforma de monitoreo y los procesos del laboratorio.
+4. Inicia la plataforma de monitoreo y los procesos del laboratorio.
 
    ```bash
    docker compose up -d
