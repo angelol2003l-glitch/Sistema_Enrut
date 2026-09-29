@@ -34,7 +34,7 @@ fi
 
 # 3. Consultas directas via SNMP Exporter hacia cada router
 echo -n "[4/10] Consulta SNMP directa a R1 (sysName): "
-R1_SYS=$(curl -s "http://localhost:9116/snmp?target=r1&module=router_ha&auth=redes2026" | grep '^sysName{sysName="r1"}' || true)
+R1_SYS=$(curl -s "http://localhost:9116/snmp?target=r1&module=router_ha&auth=lab_snmp" | grep '^sysName{sysName="r1"}' || true)
 if [ -n "$R1_SYS" ]; then
     echo "✓ sysName='r1' DETECTADO (OK)"
 else
@@ -43,7 +43,7 @@ else
 fi
 
 echo -n "[5/10] Consulta SNMP directa a R2 (sysName): "
-R2_SYS=$(curl -s "http://localhost:9116/snmp?target=r2&module=router_ha&auth=redes2026" | grep '^sysName{sysName="r2"}' || true)
+R2_SYS=$(curl -s "http://localhost:9116/snmp?target=r2&module=router_ha&auth=lab_snmp" | grep '^sysName{sysName="r2"}' || true)
 if [ -n "$R2_SYS" ]; then
     echo "✓ sysName='r2' DETECTADO (OK)"
 else
@@ -52,7 +52,7 @@ else
 fi
 
 echo -n "[6/10] Consulta SNMP directa a R-ACCESO (sysName): "
-RACC_SYS=$(curl -s "http://localhost:9116/snmp?target=r-acceso&module=router_ha&auth=redes2026" | grep '^sysName{sysName="r-acceso"}' || true)
+RACC_SYS=$(curl -s "http://localhost:9116/snmp?target=r-acceso&module=router_ha&auth=lab_snmp" | grep '^sysName{sysName="r-acceso"}' || true)
 if [ -n "$RACC_SYS" ]; then
     echo "✓ sysName='r-acceso' DETECTADO (OK)"
 else
@@ -61,7 +61,7 @@ else
 fi
 
 echo -n "[7/10] Consulta SNMP directa a R-GESTION (sysName): "
-RGEST_SYS=$(curl -s "http://localhost:9116/snmp?target=r-gestion&module=router_ha&auth=redes2026" | grep '^sysName{sysName="r-gestion"}' || true)
+RGEST_SYS=$(curl -s "http://localhost:9116/snmp?target=r-gestion&module=router_ha&auth=lab_snmp" | grep '^sysName{sysName="r-gestion"}' || true)
 if [ -n "$RGEST_SYS" ]; then
     echo "✓ sysName='r-gestion' DETECTADO (OK)"
 else
@@ -105,9 +105,6 @@ else
     echo "✗ ERROR: $FAILED_NODES nodos afectados"
     exit 1
 fi
-
-# Limpieza de archivo scratch temporal si existe
-rm -f /home/angelo/Sistema_Enrut/scratch_snmp.yml 2>/dev/null || true
 
 echo "================================================================="
 echo "  ✓ TODAS LAS VALIDACIONES DE LA FASE 2 COMPLETADAS CON EXITO    "

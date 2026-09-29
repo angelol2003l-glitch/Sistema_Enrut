@@ -14,7 +14,10 @@ import re
 import requests
 from prometheus_client import start_http_server, Gauge, Counter, Histogram
 
-COMMUNITY = "redes2026"
+with open("/run/secrets/snmp_community", "r", encoding="utf-8") as secret_file:
+    COMMUNITY = secret_file.read().strip()
+if not COMMUNITY:
+    raise RuntimeError("Falta la comunidad SNMP en /run/secrets/snmp_community")
 CLIENT_IP = "192.168.20.50"
 REMEDIATION_PORT = 5000
 PROMETHEUS_PORT = 8000
@@ -23,7 +26,9 @@ ROUTERS = {
     "R1": "192.168.11.2",
     "R2": "192.168.12.2"
 }
-R_ACCESO_IPS = ["192.168.21.2", "192.168.22.2"]
+R_ACCESO_MGMT = "r-acceso"
+# NET-SNMP-EXTEND-MIB::nsExtendOutput1Line."activeRoute"
+ACTIVE_ROUTE_OID = "1.3.6.1.4.1.8072.1.3.2.3.1.1.11.97.99.116.105.118.101.82.111.117.116.101"
 LOG_FILE = "/app/incidentes_red.log"
 
 # ==============================================================================
@@ -131,8 +136,9 @@ def init_prometheus_metrics(initial_gw, client_online):
     is_primary = bool(initial_gw and "21.1" in initial_gw)
     PROM_PC1_REACHABLE.set(1 if client_online else 0)
     PROM_PRIMARY_PATH_ACTIVE.set(1 if is_primary else 0)
-    PROM_BACKUP_PATH_ACTIVE.set(0 if is_primary else 1)
-    PROM_FAILOVER_STATE.labels(router="r-acceso").set(0 if is_primary else 1)
+    is_backup = initial_gw == "192.168.22.1"
+    PROM_BACKUP_PATH_ACTIVE.set(1 if is_backup else 0)
+    PROM_FAILOVER_STATE.labels(router="r-acceso").set(0 if is_primary else (1 if is_backup else -1))
     
     # Pre-inicializar interfaces clave
     monitored_interfaces = [
@@ -242,16 +248,14 @@ def get_interfaces(ip):
             res[name] = statuses[idx]
     return res
 
-def get_r_acceso_nexthop(r_acceso_eth1_status=1):
-    # Si la interfaz primaria hacia R1 esta DOWN en R-ACCESO, la ruta flotante conmuta a R2 (192.168.22.1)
-    if r_acceso_eth1_status == 2:
-        return "192.168.22.1", R_ACCESO_IPS[1]
-
-    for ip in R_ACCESO_IPS:
-        hop = snmp_get(ip, "1.3.6.1.2.1.4.21.1.7.0.0.0.0", timeout=1)
-        if hop and hop != "0.0.0.0":
-            return hop, ip
-    return None, None
+def get_r_acceso_nexthop():
+    """Lee la ruta efectiva del kernel por SNMP y el plano de gestion."""
+    route = snmp_get(R_ACCESO_MGMT, ACTIVE_ROUTE_OID, timeout=1)
+    if route:
+        match = re.fullmatch(r"default via (192\.168\.(?:21|22)\.1) dev eth[12](?:\s+.*)?", route)
+        if match:
+            return match.group(1)
+    return None
 
 def trigger_self_healing(router_name, router_ip, if_name):
     """Envia orden de auto-remediacion al agente NetDevOps del router con medicion de duracion"""
@@ -288,12 +292,11 @@ def main():
     except Exception as e:
         log_event("ERROR", f"Error al iniciar servidor de metricas Prometheus: {e}")
 
-    hop, active_ip = get_r_acceso_nexthop(r_acceso_eth1_status=1)
-    initial_gw = hop if hop else "192.168.21.1"
+    initial_gw = get_r_acceso_nexthop()
     initial_client_up = ping_host(CLIENT_IP)
     
     init_prometheus_metrics(initial_gw, initial_client_up)
-    log_event("INFO", f"Topologia en linea. Gateway activo en R-ACCESO: {initial_gw}")
+    log_event("INFO", f"Topologia en linea. Gateway activo en R-ACCESO: {initial_gw or 'desconocido'}")
     
     last_client_up = initial_client_up
     client_fail_time = None
@@ -324,18 +327,31 @@ def main():
                     log_event("RECUPERADO", f"PC1 Cliente ({CLIENT_IP}) restablecio conectividad ICMP.{dur_str}")
                 last_client_up = client_up
 
-            # 2. Auditoria de Interfaces Fisicas y Auto-Remediacion (Self-Healing)
-            target_ip = R_ACCESO_IPS[1] if (last_ifaces.get(("R-ACCESO", "eth1")) == 2) else R_ACCESO_IPS[0]
+            # 2. Ruta real consultada antes de las auditorias SNMP mas lentas.
+            curr_gw = get_r_acceso_nexthop()
+            PROM_PRIMARY_PATH_ACTIVE.set(1 if curr_gw == "192.168.21.1" else 0)
+            PROM_BACKUP_PATH_ACTIVE.set(1 if curr_gw == "192.168.22.1" else 0)
+            PROM_FAILOVER_STATE.labels(router="r-acceso").set(
+                0 if curr_gw == "192.168.21.1" else (1 if curr_gw == "192.168.22.1" else -1)
+            )
+            if curr_gw and curr_gw != last_gateway:
+                if last_gateway is not None and curr_gw == "192.168.22.1":
+                    PROM_FAILOVERS_TOTAL.labels(router="r-acceso", path="secondary", reason="primary_link_failure").inc()
+                    PROM_INCIDENTS_TOTAL.labels(router="R-ACCESO", event="failover_r2").inc()
+                    log_event("FAILOVER", f"¡FALLA EN CAMINO PRIMARIO! Trafico REDIRIGIDO hacia R2 ({curr_gw}) via IP SLA / Ruta Flotante.")
+                elif last_gateway is not None and curr_gw == "192.168.21.1":
+                    PROM_RECOVERIES_TOTAL.labels(router="R-ACCESO", event="path_restored").inc()
+                    log_event("RECUPERADO", f"¡CAMINO PRIMARIO RESTABLECIDO! Trafico NORMALIZADO de vuelta a R1 ({curr_gw}).")
+                last_gateway = curr_gw
+
+            # 3. Auditoria de Interfaces Fisicas y Auto-Remediacion (Self-Healing)
             nodes_to_check = dict(ROUTERS)
-            nodes_to_check["R-ACCESO"] = target_ip
+            nodes_to_check["R-ACCESO"] = R_ACCESO_MGMT
             
-            r_acceso_eth1_st = 1
             for r_name, r_ip in nodes_to_check.items():
                 ifaces = get_interfaces(r_ip)
                 for if_name, st in ifaces.items():
                     key = (r_name, if_name)
-                    if key == ("R-ACCESO", "eth1"):
-                        r_acceso_eth1_st = st
 
                     if key in last_ifaces and last_ifaces[key] != st:
                         if st == 2:
@@ -372,28 +388,6 @@ def main():
                                 dur_str = f" (Falla resuelta en {elapsed}s | MTTR: {elapsed}s)"
                             log_event("RECUPERADO", f"{r_name} -> {if_name} se restauro a UP.{dur_str}")
                     last_ifaces[key] = st
-
-            # 3. Auditoria de Gateway R-ACCESO (Failover L3 Correlacionado)
-            curr_gw, _ = get_r_acceso_nexthop(r_acceso_eth1_status=r_acceso_eth1_st)
-            if curr_gw:
-                if "21.1" in curr_gw:
-                    PROM_PRIMARY_PATH_ACTIVE.set(1)
-                    PROM_BACKUP_PATH_ACTIVE.set(0)
-                    PROM_FAILOVER_STATE.labels(router="r-acceso").set(0)
-                else:
-                    PROM_PRIMARY_PATH_ACTIVE.set(0)
-                    PROM_BACKUP_PATH_ACTIVE.set(1)
-                    PROM_FAILOVER_STATE.labels(router="r-acceso").set(1)
-
-            if curr_gw and curr_gw != last_gateway:
-                if "22.1" in curr_gw or "10.0.0.2" in curr_gw:
-                    PROM_FAILOVERS_TOTAL.labels(router="r-acceso", path="secondary", reason="primary_link_failure").inc()
-                    PROM_INCIDENTS_TOTAL.labels(router="R-ACCESO", event="failover_r2").inc()
-                    log_event("FAILOVER", f"¡FALLA EN CAMINO PRIMARIO! Trafico REDIRIGIDO hacia R2 ({curr_gw}) via IP SLA / Ruta Flotante.")
-                elif "21.1" in curr_gw:
-                    PROM_RECOVERIES_TOTAL.labels(router="R-ACCESO", event="path_restored").inc()
-                    log_event("RECUPERADO", f"¡CAMINO PRIMARIO RESTABLECIDO! Trafico NORMALIZADO de vuelta a R1 ({curr_gw}).")
-                last_gateway = curr_gw
 
         except Exception as e:
             pass

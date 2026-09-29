@@ -1,0 +1,8 @@
+#!/bin/busybox sh
+# Wrapper inteligente para Containerlab GUI / docker exec -it <nodo> sh
+# Si la sesion es interactiva (TTY) y sin argumentos, ingresa directo a vtysh
+if [ -t 0 ] && [ "$#" -eq 0 ] && [ -z "$VTYSH_ACTIVE" ]; then
+    export VTYSH_ACTIVE=1
+    exec /usr/bin/vtysh
+fi
+exec /bin/busybox sh "$@"

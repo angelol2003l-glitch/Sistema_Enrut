@@ -1,13 +1,17 @@
-#!/bin/bash
-echo "=========================================="
-echo "   AUDITORIA SNMP DESDE EL NMS"
-echo "=========================================="
-for ip in 192.168.10.1 192.168.11.2 192.168.12.2 192.168.21.2; do
-    echo -n "Consultando $ip (sysName): "
-    docker exec nms snmpget -v 2c -c redes2026 -Oqv $ip 1.3.6.1.2.1.1.5.0
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "AUDITORIA SNMP DESDE EL NMS"
+for target in r-gestion r1 r2 r-acceso; do
+    printf 'Consultando %s (sysName): ' "$target"
+    docker exec nms sh -c 'community=$(cat /run/secrets/snmp_community) && exec snmpget -v2c -c "$community" -t 1 -r 0 -Oqv "$1" 1.3.6.1.2.1.1.5.0' sh "$target"
 done
 
-echo ""
-echo "Consultando ipRouteNextHop activo en R-ACCESO (1.3.6.1.2.1.4.21.1.7.0.0.0.0):"
-docker exec nms snmpget -v 2c -c redes2026 -Oqv 192.168.21.2 1.3.6.1.2.1.4.21.1.7.0.0.0.0 || docker exec nms snmpget -v 2c -c redes2026 -Oqv 192.168.22.2 1.3.6.1.2.1.4.21.1.7.0.0.0.0
-echo "=========================================="
+echo "Ruta activa observada en R-ACCESO:"
+route=$(docker exec nms sh -c 'community=$(cat /run/secrets/snmp_community) && exec snmpget -v2c -c "$community" -t 1 -r 0 -Oqv r-acceso 1.3.6.1.4.1.8072.1.3.2.3.1.1.11.97.99.116.105.118.101.82.111.117.116.101')
+route=${route#\"}
+route=${route%\"}
+case "$route" in
+    'default via 192.168.21.1 dev eth1'*|'default via 192.168.22.1 dev eth2'*) echo "$route" ;;
+    *) echo "Ruta inesperada: $route" >&2; exit 1 ;;
+esac

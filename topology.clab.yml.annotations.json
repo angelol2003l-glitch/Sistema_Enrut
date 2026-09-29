@@ -8,8 +8,8 @@
     {
       "id": "nms",
       "position": {
-        "x": 480,
-        "y": 120
+        "x": 460,
+        "y": 160
       },
       "icon": "server",
       "role": "server"
@@ -17,8 +17,8 @@
     {
       "id": "r-gestion",
       "position": {
-        "x": 480,
-        "y": 260
+        "x": 460,
+        "y": 280
       },
       "icon": "router",
       "role": "router"
@@ -45,7 +45,7 @@
       "id": "r-acceso",
       "position": {
         "x": 460,
-        "y": 480
+        "y": 440
       },
       "icon": "router",
       "role": "router"
@@ -54,7 +54,7 @@
       "id": "pc1",
       "position": {
         "x": 460,
-        "y": 640
+        "y": 560
       },
       "icon": "client",
       "role": "client"

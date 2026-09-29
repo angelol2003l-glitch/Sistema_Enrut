@@ -1,12 +1,7 @@
-# SNMP Exporter Configuration - Redes L3 HA
-# Fase 2: Telemetria de Routers via SNMPv2c con Comunidad redes2026
-
+# SNMP Exporter configuration for the lab
 auths:
-  redes2026:
-    community: redes2026
-    version: 2
-  public_v2:
-    community: redes2026
+  lab_snmp:
+    community: {{SNMP_COMMUNITY}}
     version: 2
 
 modules:

@@ -1,306 +1,252 @@
-# Sistema de Enrutamiento L3 con Alta Disponibilidad y Telemetría NMS
+# Monitoreo y alta disponibilidad de red
 
-Laboratorio de redes automatizado con **Containerlab**, **FRRouting (FRR)**, conmutación por falla autónoma en Capa 3 (Failover / IP SLA tracking) y monitoreo centralizado con SNMP y Python.
+## 2. Descripción breve
 
----
+Laboratorio de monitoreo y alta disponibilidad de red construido con Containerlab y FRRouting. Integra telemetría SNMP, Prometheus, Grafana, Alertmanager y automatización para observar el estado de los routers, conmutar hacia una ruta de respaldo y recuperar la ruta principal.
 
-## 1. Requisitos del Sistema
+## 3. Objetivo
 
-Para ejecutar este proyecto en tu laptop necesitas:
-* **Sistema Operativo**: Linux (Ubuntu 22.04 LTS o superior) o **Windows 10/11 con WSL2 (Ubuntu)**.
-* **Docker Engine**: Instalado y en ejecución (se recomienda Docker Engine nativo en Linux/WSL2).
-* **Containerlab**: Instalado (`clab`).
-* **Git**: Para clonar el repositorio.
+Demostrar en un entorno controlado cómo supervisar una topología enrutada, detectar una falla en el camino principal y mantener conectividad mediante un router de respaldo. El proyecto también registra eventos y presenta indicadores de disponibilidad y recuperación.
 
----
+## 4. Arquitectura
 
-## 2. Instalación de Herramientas (Si no las tienes instaladas)
+El laboratorio tiene dos planos relacionados:
 
-Ejecuta estos comandos en tu terminal de Ubuntu / WSL2:
+- **Plano de datos:** conecta los routers y el cliente, y proporciona una ruta principal y otra de respaldo.
+- **Plano de monitoreo y automatización:** el NMS consulta los dispositivos por SNMP y ejecuta procesos de monitoreo y recuperación. Prometheus recopila métricas; Grafana las presenta y Alertmanager recibe las alertas configuradas.
 
-### A. Dependencias básicas
-```bash
-sudo apt update && sudo apt install -y curl git iproute2 iputils-ping
-```
+El recorrido de red se resume así:
 
-### B. Instalar Docker Engine Nativo
-Containerlab requiere manipular directamente puentes del kernel Linux (`br-xxxx`), enlaces virtuales (`veth`) y namespaces de red:
-```bash
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-sudo usermod -aG docker $USER
-sudo systemctl enable --now docker
-```
+**NMS → R-GESTION → R1/R2 → R-ACCESO → PC1**
 
-> **IMPORTANTE (Usuarios de Windows con WSL2 + Docker Desktop)**:
-> Si tienes Docker Desktop instalado en Windows, este puede secuestrar el socket `/var/run/docker.sock`, provocando el error `Failed to lookup link: Link not found`.
-> Para solucionar esto de forma automática y definitiva en tu terminal de WSL2, ejecuta una única vez:
-> ```bash
-> sudo bash scripts/setup_native_docker.sh
-> ```
-> *(Este script configura un socket dedicado para el daemon nativo y asegura que Containerlab funcione sin interferencias).*
+R-GESTION forma parte del plano de gestión. R1 es el router principal y R2 es el respaldo; ambos están interconectados y tienen conexión hacia R-GESTION y R-ACCESO. R-ACCESO actúa como gateway del cliente PC1. El NMS realiza el monitoreo y aloja procesos de automatización y registro de incidentes.
 
-### C. Instalar Containerlab
-```bash
-bash -c "$(curl -sL https://get.containerlab.dev)"
-```
-Comprueba la instalación:
-```bash
-containerlab version
-```
+## 5. Tecnologías utilizadas
 
----
+| Tecnología | Función en el proyecto |
+|---|---|
+| Containerlab | Define y despliega los nodos y enlaces del laboratorio. |
+| FRRouting | Proporciona el enrutamiento L3 en los routers virtuales. |
+| SNMP | Expone información de estado e interfaces de los dispositivos. |
+| Prometheus | Recopila y almacena métricas, y evalúa reglas de alerta. |
+| Grafana | Presenta métricas, estado, rutas y eventos en el dashboard NOC. |
+| Alertmanager | Recibe las alertas generadas por Prometheus. |
+| SNMP Exporter | Consulta equipos SNMP y expone sus datos como métricas para Prometheus. |
+| Python | Implementa el monitor NMS y el servicio de remediación. |
+| Bash | Inicia servicios, ejecuta el seguimiento de SLA y prueba el failover. |
+| Docker / Compose | Construye las imágenes del laboratorio y ejecuta la plataforma de monitoreo. |
 
-## 3. Clonar el Repositorio
+## 6. Topología de red
 
-```bash
-git clone https://github.com/angelol2003l-glitch/Sistema_Enrut.git
-cd Sistema_Enrut
-```
+La topología definida en **topology.clab.yml** incluye:
 
----
+- **nms**: servidor de monitoreo y automatización.
+- **r-gestion**: router del plano de gestión.
+- **r1**: router principal.
+- **r2**: router de respaldo.
+- **r-acceso**: gateway de la red del cliente.
+- **pc1**: cliente de prueba.
 
-## 4. Construcción de Imágenes Docker
+R1 y R2 cuentan con enlaces hacia R-GESTION y R-ACCESO, además de un enlace entre ambos. En operación normal, R-ACCESO utiliza la ruta a través de R1; cuando se detecta la falla del camino principal, el seguimiento de SLA cambia la ruta hacia R2.
 
-Antes de levantar el laboratorio por primera vez, construye las dos imágenes locales necesarias:
+## 7. Monitoreo
 
-```bash
-# 1. Imagen de routers (FRRouting + Net-SNMP)
+Los agentes SNMP de los routers proporcionan información de dispositivos e interfaces. SNMP Exporter convierte esas consultas en métricas que Prometheus recopila según **monitoring/prometheus/prometheus.yml**. El NMS ejecuta **nms/monitor_definitivo.py** y registra eventos en su bitácora.
+
+Prometheus también carga las reglas de **monitoring/prometheus/alert_rules.yml** y envía las alertas configuradas a Alertmanager. Las definiciones de SNMP Exporter se encuentran en **monitoring/snmp_exporter/snmp.yml.template**; el archivo efectivo se genera localmente.
+
+## 8. Alta disponibilidad y failover
+
+R1 ofrece el camino principal entre la red de gestión y la red de acceso. R2 mantiene el camino de respaldo. **automation/sla_tracker.sh**, ejecutado en R-ACCESO por **scripts/start_services.sh**, comprueba la disponibilidad del siguiente salto principal y actualiza la ruta por defecto para usar R2 ante una falla; al recuperarse R1, restaura el camino principal.
+
+La prueba automatizada disponible es **scripts/test_failover.sh**. Para los pasos de ejecución, consulta [Prueba de failover](#14-prueba-de-failover).
+
+## 9. Auto-recuperación
+
+Los procesos de remediación se implementan en **automation/remediation_server.py** y se ejecutan en R1, R2 y R-ACCESO. El servicio ofrece endpoints de salud y remediación para acciones de red configuradas. El NMS y el seguimiento de SLA complementan este flujo con detección y registro de incidentes.
+
+La lógica de recuperación se mantiene en los scripts y servicios del proyecto; el dashboard presenta sus resultados y métricas.
+
+## 10. Dashboard de Grafana
+
+Compose publica Grafana en [http://localhost:3000](http://localhost:3000). El dashboard provisionado está definido en **monitoring/grafana/dashboards/noc_l3_ha.json**; las fuentes de datos y su provisión están en **monitoring/grafana/provisioning/**.
+
+El archivo Compose obtiene las credenciales locales de `.env` y conserva acceso anónimo en modo Viewer. La [guía de credenciales](docs/credentials.md) explica cómo generarlas y rotarlas sin descoordinar agentes, exporter y NMS.
+
+## 11. Estructura del repositorio
+
+Árbol de los archivos fuente y configuración del proyecto. Se omiten **.git/**, el directorio generado **clab-enrut-ha/** y archivos de ejecución locales.
+
+~~~text
+.
+├── automation/
+│   ├── remediation_server.py
+│   ├── sh_wrapper
+│   └── sla_tracker.sh
+├── configs/
+│   ├── .dockerignore
+│   ├── Dockerfile.frr-snmp
+│   ├── vtysh_profile.sh
+│   ├── r-acceso/
+│   │   ├── daemons
+│   │   ├── frr.conf
+│   │   └── snmpd.conf.template
+│   ├── r-gestion/
+│   │   ├── daemons
+│   │   ├── frr.conf
+│   │   └── snmpd.conf.template
+│   ├── r1/
+│   │   ├── daemons
+│   │   ├── frr.conf
+│   │   └── snmpd.conf.template
+│   └── r2/
+│       ├── daemons
+│       ├── frr.conf
+│       └── snmpd.conf.template
+├── docs/
+│   ├── credentials.md
+│   └── images/
+│       ├── topology.png
+│       ├── grafana-overview.png
+│       ├── network-monitoring.png
+│       └── failover-recovery.png
+├── monitoring/
+│   ├── alertmanager/
+│   │   └── alertmanager.yml
+│   ├── grafana/
+│   │   ├── dashboards/
+│   │   │   └── noc_l3_ha.json
+│   │   └── provisioning/
+│   │       ├── dashboards/dashboards.yml
+│   │       └── datasources/
+│   │           ├── alertmanager.yml
+│   │           └── prometheus.yml
+│   ├── prometheus/
+│   │   ├── alert_rules.yml
+│   │   └── prometheus.yml
+│   └── snmp_exporter/
+│       └── snmp.yml.template
+├── nms/
+│   ├── .dockerignore
+│   ├── Dockerfile
+│   ├── monitor_definitivo.py
+│   └── reporte_sla.py
+├── scripts/
+│   ├── render_runtime_config.py
+│   ├── setup_native_docker.sh
+│   ├── start_services.sh
+│   ├── test_failover.sh
+│   ├── verify_alertmanager.sh
+│   ├── verify_common.sh
+│   ├── verify_grafana.sh
+│   ├── verify_ha.sh
+│   ├── verify_nms.sh
+│   ├── verify_prometheus.sh
+│   ├── verify_snmp.sh
+│   └── verify_snmp_exporter.sh
+├── .env.example
+├── .gitignore
+├── README.md
+├── docker-compose.yml
+├── topology.clab.yml
+└── topology.clab.yml.annotations.json
+~~~
+
+**clab-enrut-ha/** es salida de ejecución de Containerlab, no código fuente. El archivo **topology.clab.yml.annotations.json** conserva anotaciones visuales del editor; la topología ejecutable es **topology.clab.yml**.
+
+## 12. Despliegue
+
+Desde la raíz del repositorio, construye las imágenes requeridas por los nodos:
+
+~~~bash
+install -m 600 .env.example .env
+# Edita .env y sustituye CHANGE_ME por dos valores locales propios.
+python3 scripts/render_runtime_config.py
 docker build -t frr-snmp:latest -f configs/Dockerfile.frr-snmp configs/
+docker build -t nms-telemetry:latest -f nms/Dockerfile nms/
+~~~
 
-# 2. Imagen de la estación NMS (Python 3.11 + herramientas de red)
-docker build -t nms-telemetry:latest nms/
-```
+Despliega primero Containerlab. Este paso crea la red externa **clab** que utiliza Compose:
 
-Verifica que las imágenes existan:
-```bash
-docker images | grep -E "frr-snmp|nms-telemetry"
-```
-
----
-
-## 5. Levantar el Laboratorio
-
-### A. Desplegar la topología de red
-Despliega todos los enrutadores, la estación NMS y el host cliente:
-
-```bash
+~~~bash
 sudo clab deploy -t topology.clab.yml
-```
-*(Si ya tenías una sesión previa o deseas recrear los enlaces limpios desde cero, utiliza el flag `--reconfigure`: `sudo clab deploy -t topology.clab.yml --reconfigure`)*
+~~~
 
-### B. Iniciar los servicios de telemetría y tracking
-Inicia el motor de telemetría en el NMS y el rastreador de SLA en R-ACCESO con el script automatizado:
-```bash
-bash scripts/start_services.sh
-```
+Inicia los servicios de monitoreo y luego los procesos dentro de los nodos:
 
-### C. Verificar que los 6 nodos estén corriendo
-```bash
-docker ps
-```
-Deberás ver los contenedores: `pc1`, `r-acceso`, `r1`, `r2`, `r-gestion` y `nms`.
-
----
-
-## 6. Comandos de Inspección con Containerlab (`sudo clab`)
-
-Containerlab incluye comandos nativos para auditar nodos, interfaces y rutas sin tener que entrar uno por uno:
-
-### A. Inspeccionar el estado de los nodos del laboratorio
-Muestra una tabla con nombres, imágenes, estado y direcciones IP de gestión:
-```bash
-sudo clab inspect -t topology.clab.yml
-```
-
-### B. Ver las interfaces y direcciones IP de TODOS los nodos
-```bash
-# Ver interfaces en formato resumido en toda la red
-sudo clab exec -t topology.clab.yml --cmd "ip -br addr"
-
-# Ver enlaces físicos virtuales (veth)
-sudo clab exec -t topology.clab.yml --cmd "ip -br link"
-```
-
-### C. Ver interfaces o rutas de un nodo específico
-```bash
-# Ver interfaces solo en R-ACCESO
-sudo clab exec -t topology.clab.yml --label clab-node-name=r-acceso --cmd "ip -br addr"
-
-# Ver la tabla de rutas del kernel en R-ACCESO
-sudo clab exec -t topology.clab.yml --label clab-node-name=r-acceso --cmd "ip route"
-
-# Ver rutas en FRRouting (Zebra) dentro de R1
-sudo clab exec -t topology.clab.yml --label clab-node-name=r1 --cmd "vtysh -c 'show ip route'"
-
-# Ver estado de interfaces en FRR en R2
-sudo clab exec -t topology.clab.yml --label clab-node-name=r2 --cmd "vtysh -c 'show interface brief'"
-```
-
-### D. Ver el grafo visual interactivo en el navegador
-Containerlab levanta un servidor web con el diagrama interactivo de la topología:
-```bash
-sudo clab graph -t topology.clab.yml --srv 0.0.0.0:50080
-```
-Abre en tu navegador:
-👉 **[http://localhost:50080](http://localhost:50080)**
-
----
-
-## 7. Uso de la Extensión de Containerlab en VS Code / Antigravity (Entorno WSL2 y Linux)
-
-Para una experiencia visual y de gestión interactiva sin salir de tu editor de código:
-
-### A. Requisito Crítico: Abrir el Editor en el Entorno WSL2
-Si estás en **Windows**, la extensión **NO** debe correr en Windows nativo sino dentro de tu máquina Linux:
-1. Abre tu terminal de **Ubuntu / WSL2**.
-2. Dirígete a la carpeta del proyecto:
-   ```bash
-   cd ~/Sistema_Enrut
-   ```
-3. Abre el editor conectado directamente a WSL ejecutando:
-   ```bash
-   code .
-   ```
-   *(O haz clic en el botón verde inferior izquierdo `><` de la ventana y selecciona **"Connect to WSL"**).*
-   > **¿Por qué?** Containerlab y los contenedores de red se ejecutan en el kernel de Linux. Al abrir el editor dentro de WSL, la extensión tiene acceso directo a Docker, a los sockets del kernel y a los comandos `clab`.
-
-### B. Instalar la Extensión
-1. Abre la pestaña de Extensiones (`Ctrl + Shift + X`).
-2. Busca: **Containerlab** (desarrollada por *srl-labs*).
-3. Haz clic en **Install in WSL: Ubuntu**.
-
-### C. Funcionalidades y Cómo Usarla
-* **Visor Gráfico de Topología:**
-  * Haz clic derecho sobre el archivo `topology.clab.yml` en el explorador de archivos.
-  * Selecciona **"Containerlab: Open Topology Viewer"** (o haz clic en el icono del grafo arriba a la derecha del editor).
-  * Se abrirá el diagrama visual interactivo con todos los routers y enlaces.
-  * *Nota:* Este proyecto ya incluye los metadatos visuales y el archivo `topology.clab.yml.annotations.json` con los iconos correctos (`router`, `server`, `client`).
-* **Acciones Rápidas desde el Panel Lateral:**
-  * En la barra lateral izquierda aparecerá el icono de Containerlab.
-  * Al desplegar la topología verás la lista de nodos (`r1`, `r2`, `r-acceso`, `nms`, etc.).
-  * **Abrir Terminal / Vtysh:** Haz clic derecho sobre cualquier router y selecciona **"Attach Shell"** o abre una terminal y ejecuta:
-    ```bash
-    docker exec -it <router> vtysh
-    ```
-  * **Deploy / Destroy:** Puedes desplegar o destruir el laboratorio con un solo clic desde el menú lateral.
-  * **Captura de Paquetes en Vivo:** Clic derecho sobre cualquier enlace $\rightarrow$ **"Capture Packet (Wireshark)"** para inspeccionar paquetes ICMP, OSPF y SNMP en tiempo real.
-
----
-
-## 8. Dashboard Centralizado NOC en Grafana (Observabilidad)
-
-El proyecto cuenta con un stack moderno de observabilidad (Prometheus + Grafana + SNMP Exporter + Alertmanager):
-
-### A. Iniciar el stack de monitoreo
-```bash
+~~~bash
 docker compose up -d
-```
-
-### B. Acceso a Grafana
-* **URL:** 👉 **[http://localhost:3000](http://localhost:3000)**
-* **Credenciales:** Usuario `admin` / Contraseña `admin`
-* **Dashboard Oficial:** **NOC L3 High Availability & Self-Healing** (`noc_l3_ha.json`)
-  * Monitoreo de estado de 20 interfaces por SNMP.
-  * Detección en tiempo real de Conmutación L3 (Failover R1 $\leftrightarrow$ R2).
-  * Indicador de Auto-Recuperación NetDevOps (Self-Healing) y cálculo del tiempo de reparación (MTTR).
-
----
-
-## 9. Monitoreo y Bitácora Forense NMS
-
-
-### A. Ver la bitácora de eventos en tiempo real
-Visualiza en vivo los eventos de conectividad, caídas de enlaces y conmutaciones:
-```bash
-docker exec -it nms tail -f /app/incidentes_red.log
-```
-
-### B. Generar el reporte de SLA y métricas de MTTR
-Ejecuta el script analítico para calcular disponibilidad y tiempo medio de recuperación:
-```bash
-python3 nms/reporte_sla.py
-```
-
----
-
-## 10. Comandos de Prueba y Validación
-
-### A. Probar conmutación por falla (Failover automático)
-Ejecuta el script de prueba automatizado:
-```bash
-bash scripts/test_failover.sh
-```
-*Este script simula la caída del enlace primario en R1 (`eth3`), valida que el tráfico de PC1 no se pierda pasando a R2 por la ruta flotante (0% pérdida de paquetes), restaura el enlace y muestra la bitácora forense del NMS.*
-
-### B. Auditar SNMP en todos los routers
-```bash
-bash scripts/verify_snmp.sh
-```
-
----
-
-## 11. Comandos Útiles de Operación
-
-### Entrar a la consola interactiva de un router (FRR / vtysh)
-```bash
-# Acceder a la CLI de R1
-docker exec -it r1 vtysh
-
-# Ver tabla de rutas
-show ip route
-
-# Ver interfaces
-show interface brief
-
-# Salir
-exit
-```
-
-### Probar conectividad desde el cliente PC1
-```bash
-docker exec -it pc1 ping 8.8.8.8
-```
-
----
-
-## 12. Solución de Problemas (Troubleshooting WSL2 & Docker)
-
-### Problema: `Failed to lookup link "br-xxxx": Link not found` o `namespace path not available`
-* **Causa**: Ocurre en Windows con WSL2 cuando **Docker Desktop** intercepta las llamadas a la API de Docker mediante su proxy. Docker Desktop crea los puentes de red dentro de su propia máquina virtual de utilidad (`docker-desktop`), por lo que Containerlab (que corre en Ubuntu) no puede encontrar el dispositivo de red ni inyectar las interfaces en el kernel.
-* **Solución**:
-  Ejecuta el script de aprovisionamiento de Docker nativo:
-  ```bash
-  sudo bash scripts/setup_native_docker.sh
-  ```
-  Esto configura un socket directo con el motor nativo de Linux (`/run/docker-native.sock`) preservado en `DOCKER_HOST`.
-
-### Cómo reiniciar o recrear el laboratorio completamente
-Si por alguna razón necesitas resetear el laboratorio a un estado limpio:
-```bash
-# 1. Destruir y limpiar interfaces previas
-sudo clab destroy -t topology.clab.yml --cleanup
-
-# 2. Desplegar de nuevo la topología
-sudo clab deploy -t topology.clab.yml --reconfigure
-
-# 3. Iniciar servicios en segundo plano
 bash scripts/start_services.sh
-```
+~~~
 
----
+El script **setup_native_docker.sh** está disponible para preparar Docker nativo en entornos donde sea necesario.
 
-## 13. Detener y Destruir el Laboratorio
+## 13. Verificación
 
-Cuando termines tu sesión de trabajo, elimina la topología y limpia las interfaces virtuales:
+Comprueba el estado de Containerlab y los contenedores:
 
-```bash
-sudo clab destroy -t topology.clab.yml --cleanup
-```
+~~~bash
+sudo clab inspect -t topology.clab.yml
+docker compose ps
+~~~
 
----
+Verifica Prometheus, SNMP Exporter y las consultas SNMP con los scripts disponibles:
 
-## 14. Matriz de Fallas y Auto-Recuperación
-Para conocer a detalle el comportamiento de cada interfaz de la red, los escenarios de contingencia y las pruebas de auto-remediación, consulta:
-📄 **[MATRIZ_FALLAS_INTERFACES.md](MATRIZ_FALLAS_INTERFACES.md)**
+~~~bash
+bash scripts/verify_prometheus.sh
+bash scripts/verify_snmp_exporter.sh
+bash scripts/verify_snmp.sh
+bash scripts/verify_grafana.sh
+bash scripts/verify_alertmanager.sh
+bash scripts/verify_nms.sh
+bash scripts/verify_ha.sh
+~~~
 
+También puedes revisar los servicios desde el navegador:
+
+- Prometheus: [http://localhost:9090/targets](http://localhost:9090/targets). Confirma que los targets están activos.
+- SNMP Exporter: [http://localhost:9116](http://localhost:9116).
+- Alertmanager: [http://localhost:9093](http://localhost:9093).
+- Grafana: [http://localhost:3000](http://localhost:3000). Abre el dashboard provisionado **Network Operations Center - Alta disponibilidad L3**.
+
+## 14. Prueba de failover
+
+Con el laboratorio desplegado y los servicios iniciados, ejecuta:
+
+~~~bash
+bash scripts/test_failover.sh
+~~~
+
+El script exige la secuencia **R1 principal → R2 respaldo activo → recuperación de R1** y comprueba conectividad desde PC1 en cada estado. Durante la falla controlada pausa únicamente el agente de remediación de R1 para evitar que repare el enlace antes de observar R2. Al finalizar, o ante un error o interrupción, restaura el enlace y reanuda el agente.
+
+Cada ruta tiene un timeout de 30 segundos (`FAILOVER_TIMEOUT`) y cada estado del NMS uno de 60 segundos (`FAILOVER_TELEMETRY_TIMEOUT`). La falla se mantiene 15 segundos (`FAILOVER_HOLD_SECONDS`) para observar estabilidad. Los tres valores admiten de 1 a 120 segundos. El script devuelve un código distinto de cero si falta un estado o falla la conectividad.
+
+La prueba utiliza `8.8.8.8` como destino ICMP, configurable con `FAILOVER_PROBE_IP`. Esta comprobación necesita conectividad hacia el destino elegido.
+
+El NMS consulta el siguiente salto de R-ACCESO por la red de gestión, independiente del enlace principal. Durante la prueba, comprueba también que las métricas de ruta activa sigan la secuencia R1 → R2 → R1.
+
+## 15. Evidencias
+
+Capturas del laboratorio en ejecución. Los valores son los observados al capturar cada vista; pueden cambiar al repetir las pruebas.
+
+![Topología de red en Grafana](docs/images/topology.png)
+
+El panel de topología muestra los seis dispositivos y sus funciones, con R1 como principal y R2 como respaldo. Es una representación simplificada de la arquitectura.
+
+![Vista general del dashboard NOC](docs/images/grafana-overview.png)
+
+La vista general reúne el estado de los dispositivos, los indicadores, las interfaces, las rutas y el tráfico del laboratorio.
+
+![Interfaces supervisadas mediante SNMP](docs/images/network-monitoring.png)
+
+La tabla de Grafana muestra las interfaces y su estado operativo a partir de las métricas de SNMP recopiladas por Prometheus.
+
+![Resultado de la prueba de failover y recuperación](docs/images/failover-recovery.png)
+
+Registro de una ejecución real de `scripts/test_failover.sh`: observa R1, conmuta a R2, comprueba conectividad desde PC1 y confirma el retorno a R1. La captura presenta el resumen de las líneas de estado y los resultados de ping de esa ejecución.
+
+## 16. Mejoras futuras
+
+- Incorporar una guía breve de solución de problemas para despliegue y conectividad.
+- Ampliar las pruebas automatizadas para validar recuperación de ruta y estado de los targets.
+- Sustituir las credenciales de demostración por secretos y controles adecuados si el entorno se expone fuera del equipo local.

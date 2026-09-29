@@ -1,0 +1,5 @@
+rocommunity {{SNMP_COMMUNITY}}
+syslocation Lab Containerlab
+syscontact admin@redes.local
+agentaddress udp:161
+extend activeRoute /sbin/ip -4 route show default

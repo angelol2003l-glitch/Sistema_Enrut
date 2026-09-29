@@ -15,6 +15,7 @@ topology:
         role: server
       binds:
         - nms:/app
+        - tmp/runtime-config/snmp_community:/run/secrets/snmp_community:ro
       exec:
         - ip addr add 192.168.10.10/24 dev eth1
         - ip route add 192.168.0.0/16 via 192.168.10.1 dev eth1
@@ -31,7 +32,7 @@ topology:
       binds:
         - configs/r-gestion/daemons:/etc/frr/daemons
         - configs/r-gestion/frr.conf:/etc/frr/frr.conf
-        - configs/r-gestion/snmpd.conf:/etc/snmp/snmpd.conf
+        - tmp/runtime-config/r-gestion/snmpd.conf:/etc/snmp/snmpd.conf:ro
       exec:
         - vtysh -f /etc/frr/frr.conf
         - sysctl -w net.ipv4.ip_forward=1
@@ -50,8 +51,8 @@ topology:
       binds:
         - configs/r1/daemons:/etc/frr/daemons
         - configs/r1/frr.conf:/etc/frr/frr.conf
-        - configs/r1/snmpd.conf:/etc/snmp/snmpd.conf
-        - configs/remediation_server.py:/usr/local/bin/remediation_server.py
+        - tmp/runtime-config/r1/snmpd.conf:/etc/snmp/snmpd.conf:ro
+        - automation/remediation_server.py:/usr/local/bin/remediation_server.py
       exec:
         - vtysh -f /etc/frr/frr.conf
         - sysctl -w net.ipv4.ip_forward=1
@@ -68,8 +69,8 @@ topology:
       binds:
         - configs/r2/daemons:/etc/frr/daemons
         - configs/r2/frr.conf:/etc/frr/frr.conf
-        - configs/r2/snmpd.conf:/etc/snmp/snmpd.conf
-        - configs/remediation_server.py:/usr/local/bin/remediation_server.py
+        - tmp/runtime-config/r2/snmpd.conf:/etc/snmp/snmpd.conf:ro
+        - automation/remediation_server.py:/usr/local/bin/remediation_server.py
       exec:
         - vtysh -f /etc/frr/frr.conf
         - sysctl -w net.ipv4.ip_forward=1
@@ -88,9 +89,9 @@ topology:
       binds:
         - configs/r-acceso/daemons:/etc/frr/daemons
         - configs/r-acceso/frr.conf:/etc/frr/frr.conf
-        - configs/r-acceso/snmpd.conf:/etc/snmp/snmpd.conf
-        - configs/r-acceso/sla_tracker.sh:/usr/local/bin/sla_tracker.sh
-        - configs/remediation_server.py:/usr/local/bin/remediation_server.py
+        - tmp/runtime-config/r-acceso/snmpd.conf:/etc/snmp/snmpd.conf:ro
+        - automation/sla_tracker.sh:/usr/local/bin/sla_tracker.sh
+        - automation/remediation_server.py:/usr/local/bin/remediation_server.py
       exec:
         - vtysh -f /etc/frr/frr.conf
         - sysctl -w net.ipv4.ip_forward=1

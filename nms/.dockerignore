@@ -1,0 +1,3 @@
+# The NMS Dockerfile builds the runtime environment only.
+# Containerlab bind-mounts the local nms/ directory at /app when the node starts.
+**

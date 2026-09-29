@@ -1,91 +1,121 @@
+# Define todos los contenedores que forman la plataforma de monitoreo.
 services:
+  # Prometheus recolecta metricas, evalua reglas de alerta y guarda series de tiempo.
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
     restart: unless-stopped
+    # Expone la interfaz web de Prometheus en http://localhost:9090.
     ports:
       - "9090:9090"
+    # Monta la configuracion, las reglas de alerta y el volumen persistente de datos.
     volumes:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./monitoring/prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
       - prometheus_data:/prometheus
+    # Parametros de arranque: archivo de configuracion, ruta de datos y recarga por API.
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
       - '--web.enable-lifecycle'
+    # Se conecta a la red de monitoreo y a la red externa de Containerlab.
     networks:
       - monitoring_net
       - clab_net
+    # Espera a que existan los servicios de exportacion SNMP y gestion de alertas.
     depends_on:
       - snmp-exporter
       - alertmanager
 
+  # SNMP Exporter traduce consultas SNMP de los routers/equipos a metricas Prometheus.
   snmp-exporter:
     image: prom/snmp-exporter:latest
     container_name: snmp-exporter
     restart: unless-stopped
+    # Expone el endpoint de metricas SNMP en http://localhost:9116.
     ports:
       - "9116:9116"
+    # Usa la configuracion SNMP generada desde las variables locales.
     volumes:
-      - ./monitoring/snmp_exporter/snmp.yml:/etc/snmp_exporter/snmp.yml:ro
+      - ./tmp/runtime-config/snmp.yml:/etc/snmp_exporter/snmp.yml:ro
+    # Carga la configuracion SNMP y permite usar cualquier interfaz de salida.
     command:
       - '--config.file=/etc/snmp_exporter/snmp.yml'
       - '--snmp.source-address=0.0.0.0:0'
+    # Comparte red con Prometheus y con los dispositivos de la topologia Containerlab.
     networks:
       - monitoring_net
       - clab_net
 
+  # Alertmanager recibe alertas de Prometheus y aplica rutas, agrupacion y silencios.
   alertmanager:
     image: prom/alertmanager:latest
     container_name: alertmanager
     restart: unless-stopped
+    # Expone la interfaz web/API de Alertmanager en http://localhost:9093.
     ports:
       - "9093:9093"
+    # Monta la configuracion de alertas y un volumen para su estado persistente.
     volumes:
       - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
       - alertmanager_data:/alertmanager
+    # Define el archivo de configuracion y la ruta donde guarda datos internos.
     command:
       - '--config.file=/etc/alertmanager/alertmanager.yml'
       - '--storage.path=/alertmanager'
+    # Solo necesita comunicarse dentro de la red de monitoreo.
     networks:
       - monitoring_net
 
+  # Grafana muestra dashboards y consulta las fuentes de datos provisionadas.
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
     restart: unless-stopped
+    # Expone la interfaz web de Grafana en http://localhost:3000.
     ports:
       - "3000:3000"
+    # Configura credenciales iniciales, registro de usuarios y acceso anonimo de lectura.
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?Define GRAFANA_ADMIN_PASSWORD en .env}
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+    # Provisiona datasources/dashboards y conserva datos propios de Grafana.
     volumes:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafana_data:/var/lib/grafana
+    # Se conecta a la red interna donde estan Prometheus y Alertmanager.
     networks:
       - monitoring_net
+    # Arranca despues de los servicios que Grafana usa como fuentes de datos.
     depends_on:
       - prometheus
       - alertmanager
 
+# Redes usadas por los contenedores.
 networks:
+  # Red bridge local para que los servicios de monitoreo se comuniquen entre si.
   monitoring_net:
     name: monitoring_network
     driver: bridge
+  # Red externa creada por Containerlab; permite llegar a routers/equipos del laboratorio.
   clab_net:
     name: clab
     external: true
 
+# Volumenes persistentes para no perder datos al recrear contenedores.
 volumes:
+  # Guarda la base de datos de series de tiempo de Prometheus.
   prometheus_data:
     name: prometheus_data
+  # Guarda configuracion interna, plugins y estado de Grafana.
   grafana_data:
     name: grafana_data
+  # Guarda el estado interno de Alertmanager.
   alertmanager_data:
     name: alertmanager_data

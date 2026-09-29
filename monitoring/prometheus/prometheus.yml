@@ -1,10 +1,9 @@
 # Prometheus Configuration - Laboratorio de Enrutamiento L3
-# Fase 6: Alertas, SLA y Alertmanager
 
 global:
-  scrape_interval: 2s      # Intervalo de recoleccion base para telemetria agil
-  evaluation_interval: 2s  # Intervalo de evaluacion de reglas de alerta
-  scrape_timeout: 2s       # Timeout para peticiones de scraping
+  scrape_interval: 2s # Intervalo de recoleccion base para telemetria agil
+  evaluation_interval: 2s # Intervalo de evaluacion de reglas de alerta
+  scrape_timeout: 2s # Timeout para peticiones de scraping
 
 alerting:
   alertmanagers:
@@ -33,7 +32,7 @@ scrape_configs:
     metrics_path: /snmp
     params:
       module: [router_ha]
-      auth: [redes2026]
+      auth: [lab_snmp]
     static_configs:
       - targets:
           - "r1"

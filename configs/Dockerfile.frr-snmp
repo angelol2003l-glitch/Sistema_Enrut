@@ -1,9 +1,15 @@
+# Imagen base oficial de FRRouting para levantar routers FRR en el laboratorio.
 FROM frrouting/frr:latest
 
+# Agrega SNMP, herramientas de red y bash dentro del contenedor FRR.
+# net-snmp/net-snmp-tools permiten exponer y probar metricas SNMP desde el router.
 RUN apk update && apk add --no-cache net-snmp net-snmp-tools iputils bash
 
-# Auto-ingreso a vtysh al abrir terminal interactiva ("Shell" en extension Containerlab)
+# Copia el perfil que abre vtysh automaticamente al entrar a una terminal interactiva.
+# Esto facilita administrar FRR desde la opcion "Shell" de la extension Containerlab.
 COPY vtysh_profile.sh /etc/profile.d/vtysh.sh
+
+# Da permisos al perfil, asegura que exista vtysh.conf y carga el perfil al iniciar bash/profile.
 RUN chmod +x /etc/profile.d/vtysh.sh && \
     touch /etc/frr/vtysh.conf && \
     echo '[ -f /etc/profile.d/vtysh.sh ] && . /etc/profile.d/vtysh.sh' >> /root/.bashrc && \
